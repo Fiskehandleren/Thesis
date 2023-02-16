@@ -20,7 +20,7 @@ def load_data():
 
     df['Total Duration (min)'] = pd.to_timedelta(df['Total Duration (hh:mm:ss)']).dt.total_seconds()/60
     df['Charging Time (min)'] = pd.to_timedelta(df['Charging Time (hh:mm:ss)']).dt.total_seconds()/60
-    df.drop(['Total Duration (hh:mm:ss)', 'Charging Time (hh:mm:ss)'], inplace=True)
+    df.drop(['Total Duration (hh:mm:ss)', 'Charging Time (hh:mm:ss)'], axis=1, inplace=True)
 
     df['End Date'] = df['End Date'].apply(convert_to_datetime)
 
