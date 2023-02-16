@@ -38,7 +38,7 @@ def convert_to_datetime(serial):
         return datetime.datetime.utcfromtimestamp(seconds)
 
 
-def create_count_data(df, interval_length=30):
+def create_count_data(df, interval_length=30, save=False):
     """ Create counts for number of sessions in each interval. The `Period` defines when the period starts and runs until the next period in the dataframe."""
     df_combined = pd.DataFrame()
     for cluster in df['Cluster'].unique():
@@ -55,6 +55,8 @@ def create_count_data(df, interval_length=30):
         data.Period = pd.to_datetime(data.Period)
         data["Cluster"] = cluster
         df_combined = pd.concat([df_combined, data])
+    if save:
+        df_combined.to_csv('charging_session_count_{interval_length}.csv')
 
-    return df_combined.drop('Period', axis=1)
+    return df_combined
     
