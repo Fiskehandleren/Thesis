@@ -55,6 +55,7 @@ def create_count_data(df, interval_length=30, save=False):
         data.Period = pd.to_datetime(data.Period)
         data["Cluster"] = cluster
         df_combined = pd.concat([df_combined, data])
+    df_combined.reset_index(drop=True, inplace=True)
     if save:
         df_combined.to_csv(f'charging_session_count_{interval_length}.csv')
 
