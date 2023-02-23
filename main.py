@@ -31,8 +31,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser = pl.Trainer.add_argparse_args(parser)
 
-    parser.add_argument('--epochs', type=int, default=100)
-
     parser.add_argument(
         "--model_name",
         type=str,

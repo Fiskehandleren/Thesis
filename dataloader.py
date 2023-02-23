@@ -90,7 +90,6 @@ def generate_dataset(data, seq_len, pred_len, time_len=None, split_ratio=0.8, no
     print('split_ratio: ', split_ratio)
 
     # each row is a timepoint and each column is a cluster
-    data = data
     if time_len is None:
         time_len = data.shape[0]
     if normalize:
@@ -101,6 +100,7 @@ def generate_dataset(data, seq_len, pred_len, time_len=None, split_ratio=0.8, no
     test_data = data[train_size:time_len]
     train_X, train_Y, test_X, test_Y = list(), list(), list(), list()
 
+    # Each training window is of seq_length size, and the prediction window is of pred_length size
     for i in range(len(train_data) - seq_len - pred_len):
         train_X.append(np.array(train_data[i : i + seq_len]))
         train_Y.append(np.array(train_data[i + seq_len : i + seq_len + pred_len]))

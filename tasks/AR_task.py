@@ -31,7 +31,7 @@ class AR_Task(pl.LightningModule):
         # Compute loss.
         loss = self._loss_fn(y_predict, y)
 
-        # self.log("loss", loss)
+        self.log("loss", loss)
         return loss
 
     def configure_optimizers(self):

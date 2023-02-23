@@ -52,10 +52,10 @@ class EVChargersDataset(pl.LightningDataModule):
         self.adj = np.load(os.path.join(self._adj_path, 'distance_matrix.npy'))
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=len(self.val_dataset))
+        return DataLoader(self.val_dataset, batch_size=len(self.val_dataset), shuffle=False)
 
     def setup(self, stage=None):
         (self.train_dataset, self.val_dataset) = dataloader.generate_torch_datasets(
