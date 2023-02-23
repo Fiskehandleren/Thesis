@@ -39,7 +39,7 @@ class AR(nn.Module):
 
 class AR_Net_multi(nn.Module):
     def __init__(self, input_dim, output_dim, hidden_dim):
-        super(AR_Net, self).__init__()
+        super(AR_Net_multi, self).__init__()
         self.fc1 = nn.Linear(input_dim, hidden_dim) 
         self.fc3 = nn.Linear(hidden_dim, hidden_dim*2) 
 
@@ -65,7 +65,7 @@ class AR_Net_multi(nn.Module):
     
 class AR_multi(nn.Module):
     def __init__(self, input_dim, output_dim):
-        super(AR, self).__init__()
+        super(AR_multi, self).__init__()
         self.fc1 = nn.Linear(input_dim, output_dim) 
         print("AR model created with input_dim: ", input_dim, " and output_dim: ", output_dim)
     def forward(self, x):
