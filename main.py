@@ -76,6 +76,7 @@ def get_model(args, dm):
         model = models.AR(input_dim=2*24*7, output_dim=2*24)
     elif args.model_name == "AR-Net":
         model = models.AR_Net(input_dim=8, output_dim=args.output_dim, hidden_dim=args.hidden_dim)
+
     #if args.model_name == "GRU":
         #model = models.GRU(input_dim=dm.adj.shape[0], hidden_dim=args.hidden_dim)
     #if args.model_name == "TGCN":
