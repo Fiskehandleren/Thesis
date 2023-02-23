@@ -70,19 +70,6 @@ def create_count_data(df, interval_length=30, save=False):
         df_pivot_reduced.to_csv(f'charging_session_count_{interval_length}.csv')
 
     return df_pivot_reduced
-    
-
-def generate_covariates(times, num_covariates=4):
-    """ Generated weekday, hour, and month covariates for each timepoint."""
-    covariates = np.zeros((times.shape[0], num_covariates))
-    for i, input_time in enumerate(times):
-        covariates[i, 1] = input_time.weekday()
-        covariates[i, 2] = input_time.hour
-        covariates[i, 3] = input_time.month
-    # Standardize covariates
-    #for i in range(1,num_covariates):
-     #   covariates[:,i] = stats.zscore(covariates[:,i])
-    return covariates[:, :num_covariates]
 
 
 def generate_dataset(data, seq_len, pred_len, time_len=None, split_ratio=0.8, normalize=False):
@@ -95,6 +82,15 @@ def generate_dataset(data, seq_len, pred_len, time_len=None, split_ratio=0.8, no
     :param normalize: scale the data to (0, 1], divide by the maximum value in the data
     :return: train set (X, Y) and test set (X, Y)
     """
+
+    # print parameters
+    print('seq_len: ', seq_len)
+    print('pred_len: ', pred_len)
+    print('time_len: ', time_len)  
+    print('split_ratio: ', split_ratio)
+
+    # each row is a timepoint and each column is a cluster
+    data = data
     if time_len is None:
         time_len = data.shape[0]
     if normalize:
@@ -104,9 +100,11 @@ def generate_dataset(data, seq_len, pred_len, time_len=None, split_ratio=0.8, no
     train_data = data[:train_size]
     test_data = data[train_size:time_len]
     train_X, train_Y, test_X, test_Y = list(), list(), list(), list()
+
     for i in range(len(train_data) - seq_len - pred_len):
         train_X.append(np.array(train_data[i : i + seq_len]))
         train_Y.append(np.array(train_data[i + seq_len : i + seq_len + pred_len]))
+
     for i in range(len(test_data) - seq_len - pred_len):
         test_X.append(np.array(test_data[i : i + seq_len]))
         test_Y.append(np.array(test_data[i + seq_len : i + seq_len + pred_len]))
@@ -123,7 +121,6 @@ def generate_torch_datasets(data, seq_len, pred_len, time_len=None, split_ratio=
         split_ratio=split_ratio,
         normalize=normalize,
     )
-    print(train_X)
     train_dataset = torch.utils.data.TensorDataset(
         torch.FloatTensor(train_X), torch.FloatTensor(train_Y)
     )
