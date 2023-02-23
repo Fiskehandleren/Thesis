@@ -1,3 +1,6 @@
 plotly==5.11.0
 numpy==1.22.4
 pandas==1.5.2
+haversine==2.7.0
+pytorch-lightning==1.9.2
+scipy==1.10.0

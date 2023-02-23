@@ -33,9 +33,16 @@ class AR(nn.Module):
         super(AR, self).__init__()
         self.fc1 = nn.Linear(input_dim, output_dim) 
         print("AR model created with input_dim: ", input_dim, " and output_dim: ", output_dim)
+
     def forward(self, x):
         out = self.fc1(x)
         return out
+    
+    @staticmethod
+    def add_model_specific_arguments(parent_parser):
+        parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument("--output_dim", type=int, default=8)
+        return parser
 
 class AR_Net_multi(nn.Module):
     def __init__(self, input_dim, output_dim, hidden_dim):

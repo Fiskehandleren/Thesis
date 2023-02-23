@@ -1,3 +1,3 @@
-from tasks import AR_Task
+from tasks.AR_task import AR_Task
 
 __all__ = ["AR_Task"]
