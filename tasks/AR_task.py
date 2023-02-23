@@ -1,4 +1,4 @@
-from ..losses import poisson_negative_log_likelihood
+from torch import nn
 import pytorch_lightning as pl
 from torch import optim
 
@@ -6,8 +6,8 @@ class AR_Task(pl.LightningModule):
     def __init__(
         self,
         model,
+        loss_fn,
         regressor="linear",
-        loss_fn=poisson_negative_log_likelihood,
         pre_len: int = 3,
         learning_rate: float = 1e-3,
         weight_decay: float = 1.5e-3,
@@ -15,7 +15,7 @@ class AR_Task(pl.LightningModule):
         **kwargs
     ):
         super(AR_Task, self).__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=["loss_fn"])
         self.model = model
         self._loss_fn = loss_fn
         self.feat_max_val = feat_max_val
