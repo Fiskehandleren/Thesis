@@ -8,6 +8,7 @@ class GRU(nn.Module):
         self._input_dim = input_dim  # num_nodes for prediction
         self._hidden_dim = hidden_dim
         self.gru_cell = GRUCell(self._input_dim, self._hidden_dim)
+        print(f"GRU model created with input_dim: {input_dim}, and hidden_dim: {hidden_dim}")
 
     def forward(self, inputs):
         batch_size, seq_len, num_nodes = inputs.shape
