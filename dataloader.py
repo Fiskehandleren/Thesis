@@ -74,6 +74,7 @@ def create_count_data(df, interval_length=30, save=False):
 
 def generate_dataset(data, seq_len, pred_len, time_len=None, split_ratio=0.8, normalize=False):
     """
+    Generate train and test dataset by making each training example [t, t-1,..., t-seq_len] and the corresponding label [t+1, t+2,..., t+pred_len]
     :param data: feature matrix
     :param seq_len: length of the train data sequence
     :param pred_len: length of the prediction data sequence
@@ -89,15 +90,18 @@ def generate_dataset(data, seq_len, pred_len, time_len=None, split_ratio=0.8, no
     print('time_len: ', time_len)  
     print('split_ratio: ', split_ratio)
 
-    # each row is a timepoint and each column is a cluster
+    # Each row is a timepoint and each column is a cluster
     if time_len is None:
         time_len = data.shape[0]
     if normalize:
         max_val = np.max(data)
         data = data / max_val
+
+    # Split the data into train and test set
     train_size = int(time_len * split_ratio)
     train_data = data[:train_size]
     test_data = data[train_size:time_len]
+
     train_X, train_Y, test_X, test_Y = list(), list(), list(), list()
 
     # Each training window is of seq_length size, and the prediction window is of pred_length size
@@ -112,7 +116,9 @@ def generate_dataset(data, seq_len, pred_len, time_len=None, split_ratio=0.8, no
 
 
 def generate_torch_datasets(data, seq_len, pred_len, time_len=None, split_ratio=0.8, normalize=False):
+    """ Generate torch datasets for training and testing.  """
     normalize=False
+    # Generate sliding window dataset
     train_X, train_Y, test_X, test_Y = generate_dataset(
         data,
         seq_len,

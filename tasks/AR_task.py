@@ -8,14 +8,14 @@ class AR_Task(pl.LightningModule):
         model,
         loss_fn,
         regressor="linear",
-        pre_len: int = 3,
+        pred_len: int = 2*24,
         learning_rate: float = 1e-3,
         weight_decay: float = 1.5e-3,
         feat_max_val: float = 1.0,
         **kwargs
     ):
         super(AR_Task, self).__init__()
-        self.save_hyperparameters(ignore=["loss_fn"])
+        self.save_hyperparameters()
         self.model = model
         self._loss_fn = loss_fn
         self.feat_max_val = feat_max_val
