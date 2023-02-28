@@ -6,8 +6,9 @@ def poisson_negative_log_likelihood(y_predict, y):
     return -torch.sum(y*y_predict - torch.exp(y_predict))
 
 
-def censored_poisson_negative_log_likelihood(y_predict, y, threshold):
+def censored_poisson_negative_log_likelihood(y_predict, y, C):
     pois = torch.distributions.poisson.Poisson(y_predict)
     """ https://findit.dtu.dk/en/catalog/53282c10c18e77205dd0f8ae """
-    stupid_cdf = torch.tensor(poisson.cdf(y_predict, y))
-    return -torch.sum((y<threshold).int() * pois.log_prob(y) + (1 - (y<threshold).int() * torch.log(stupid_cdf)))
+    poiss_cdf = torch.tensor(poisson.cdf(k=C, mu=y_predict))
+    d_t = (y<C).int()
+    return -torch.sum(d_t * pois.log_prob(y) + (1 - d_t) * torch.log(poiss_cdf)) # Do we sum on the correct axis here?
