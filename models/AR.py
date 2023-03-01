@@ -30,7 +30,6 @@ class AR(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(AR, self).__init__()
         self.fc1 = nn.Linear(input_dim, output_dim) 
-        print("AR model created with input_dim: ", input_dim, " and output_dim: ", output_dim)
 
     def forward(self, x):
         x = x.view(x.shape[0], -1)
@@ -73,7 +72,6 @@ class AR_multi(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(AR_multi, self).__init__()
         self.fc1 = nn.Linear(input_dim, output_dim) 
-        print("AR model created with input_dim: ", input_dim, " and output_dim: ", output_dim)
     def forward(self, x):
         out = self.fc1(x)
         return out
