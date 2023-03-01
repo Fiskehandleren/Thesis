@@ -10,7 +10,6 @@ def make_loss_function_tilted_loss(theta, lower_threshold):
     return lambda y_true, y_pred:\
         tf.math.reduce_sum(tl(theta=theta, e=y_true - y_pred))
 
-
 def multi_tilted_loss(quantiles,y,f):
     loss = 0.0
     for k in range(len(quantiles)):
