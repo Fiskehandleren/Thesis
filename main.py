@@ -2,7 +2,7 @@ import logging
 import argparse
 import pytorch_lightning as pl
 from datasets import EVChargersDataset
-from losses import poisson_negative_log_likelihood
+from utils.losses import poisson_negative_log_likelihood
 import models
 from tasks import AR_Task, TGCN_task
 from torch import nn

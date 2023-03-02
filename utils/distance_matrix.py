@@ -1,9 +1,10 @@
 from haversine import haversine, Unit
 import numpy as np
 import time
-from dataloader import load_data
+from utils.dataloader import load_data
 from tqdm import tqdm
-# compute the haversine distance between each station and all other stations
+import pandas as pd
+# compute the haversine distance between each cluster and all other clusters
 def compute_distance_matrix(df):
     t1 = time.time()
     clusters = df['Cluster'].unique()
@@ -26,6 +27,7 @@ def compute_distance_matrix(df):
     print(f"Time taken: {t2 -t1:0.2f} seconds")
     # save 
     np.save('data/distance_matrix.npy', distance_matrix)
+    pd.DataFrame(distance_matrix, columns=clusters).to_csv('data/distance_matrix.csv', index=False)
     return distance_matrix
 
 if __name__ == '__main__':

@@ -1,9 +1,9 @@
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 import pandas as pd
 import numpy as np
 import os
-import dataloader
+import utils.dataloader as dataloader
 import argparse
 
 

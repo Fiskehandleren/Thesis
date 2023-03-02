@@ -7,7 +7,7 @@ import torch
 
 def load_data():
     df = pd.read_csv(
-    'data/ChargePoint Data CY20Q4.csv', dtype={'Station Name': str}, 
+    '../data/ChargePoint Data CY20Q4.csv', dtype={'Station Name': str}, 
     parse_dates=['Start Date', 'Total Duration (hh:mm:ss)'], infer_datetime_format=True, low_memory=False)
 
     # Make a unique id for each row
