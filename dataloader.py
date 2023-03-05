@@ -41,7 +41,7 @@ def convert_to_datetime(serial):
         return datetime.datetime.utcfromtimestamp(seconds)
 
 
-def create_count_data(df, interval_length=30, save=False):
+def create_count_data(df, interval_length=30, save=False, cap_recordings = False, censored = False):
     """ Create counts for number of sessions in each interval. The `Period` defines when the period starts and runs until the next period in the dataframe."""
     df_combined = pd.DataFrame()
     for cluster in df['Cluster'].unique():
@@ -59,17 +59,26 @@ def create_count_data(df, interval_length=30, save=False):
         data["Cluster"] = cluster
         df_combined = pd.concat([df_combined, data])
     df_combined.reset_index(drop=True, inplace=True)
-    #df_pivot = df_combined.pivot_table(index='Period', columns='Cluster', values='Sessions')
+    df_pivot = df_combined.pivot_table(index='Period', columns='Cluster', values='Sessions')
     # Cut timeseries off at the latest timepoint of the cluster with the earliest last timepoint
-    #df_pivot_reduced = df_pivot.loc[:df_combined.groupby('Cluster').agg({'Period': 'max'}).Period.min()].copy()
+    df_pivot_reduced = df_pivot.loc[:df_combined.groupby('Cluster').agg({'Period': 'max'}).Period.min()].copy()
     # Cluster "SHERMAN" has no data before late 2021, so we drop it
-    #df_pivot_reduced.drop('SHERMAN', axis=1, inplace=True)
+    df_pivot_reduced.drop('SHERMAN', axis=1, inplace=True)
     # Fill missing values with 0
-    #df_pivot_reduced.fillna(0, inplace=True)
-    if save:
-        df_combined.to_csv(f'charging_session_count_{interval_length}_viz.csv')
+    df_pivot_reduced.fillna(0, inplace=True)
 
-    return df_combined
+    if cap_recordings == True:
+        NotImplemented
+
+    if censored == True:
+        df_pivot_reduced['CensoredSessions'] = np.zeros(len(df_pivot_reduced))
+        df_pivot_reduced['CensoredSessions'][df_pivot_reduced['Sessions'] >= 4] = df_pivot_reduced['Sessions']-2
+        df_pivot_reduced.to_csv(f'charging_session_count_{interval_length}_censored.csv')
+
+    if save:
+        df_pivot_reduced.to_csv(f'charging_session_count_{interval_length}.csv')
+
+    return df_pivot_reduced
 
 
 def generate_dataset(data, seq_len, pred_len, time_len=None, split_ratio=0.8, normalize=False):
