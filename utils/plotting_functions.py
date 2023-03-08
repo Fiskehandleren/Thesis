@@ -16,8 +16,6 @@ pio.templates.default = "plotly_white"
 pd.set_option('display.max_columns', None)
 
 
-
-
 def plot_time_series(df_in, start_date = 0, end_date = 0, save_figure = False):
     plot_list = df_in['Cluster'].unique()[:-1]
     fig, axes = plt.subplots(4,2, figsize=(12, 14), sharey = True)
@@ -55,8 +53,6 @@ def plot_time_series(df_in, start_date = 0, end_date = 0, save_figure = False):
 
     if (save_figure == True):
         fig.savefig("/Users/julian/Documents/GitHub/Thesis/Figures/Time_series_{start_date}_{end_date}.png", bbox_inches='tight')
-
-
 
 
 def plot_histograms(df_in, save_figure = False):
