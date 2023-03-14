@@ -1,5 +1,16 @@
 import torch
 from scipy.stats import poisson
+from torch import nn
+
+def get_loss(loss):
+    if loss == "mse":
+        return nn.MSELoss()
+    elif loss == "PNLL":
+        return nn.PoissonNLLLoss(log_input=False)
+    else:
+        raise NotImplementedError("Loss function not implemented")
+    #elif loss == "CPNLL":
+    #    return censored_poisson_negative_log_likelihood
 
 def poisson_negative_log_likelihood(y_predict, y):
     """ https://en.wikipedia.org/wiki/Poisson_regression#Maximum_likelihood-based_parameter_estimation """
