@@ -56,10 +56,9 @@ class TGCN_task(pl.LightningModule):
             "val_mae": mae,
             "val_mse": mse
         }
-        self.log_dict(metrics)
+        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
         return loss
-
-
+    
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
 
