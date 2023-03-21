@@ -13,7 +13,7 @@ logger = logging.getLogger('Thesis.Train')
 def get_model(args, dm):
     model = None
     if args.model_name == "AR":
-        model = models.AR(input_dim=dm.lags, output_dim=2*24)
+        model = models.AR(input_dim=args.sequence_length, output_dim=1)
     elif args.model_name == "AR_Net":
         model = models.AR_Net(input_dim=dm.lags, output_dim=dm.pred_len, hidden_dim=args.hidden_dim)
     elif args.model_name == "LSTM": 

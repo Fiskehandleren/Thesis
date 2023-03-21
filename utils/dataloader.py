@@ -278,7 +278,6 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
     # Create target variable. We might have more targets if we're running 
     # multivariate models
 
-    forecast_lead = 24
     if isinstance(target_var, list):
         target = [f"{var}_lead{forecast_lead}" for var in target_var]
     else:
@@ -331,6 +330,8 @@ class SequenceDataset(Dataset):
 
         if threshold is not None:
             self.tau = torch.tensor(dataframe[threshold].values).float()
+        else:
+            self.tau = None
         
         
     def __len__(self):

@@ -21,6 +21,7 @@ class AR_Task(pl.LightningModule):
         self.model = model
         self._loss_fn = loss_fn
         self.feat_max_val = feat_max_val
+        print(self.censored)
 
     def forward(self, x):
         return self.model(x)
@@ -36,9 +37,9 @@ class AR_Task(pl.LightningModule):
 
         # Compute loss.
         if self.censored == True:
-            loss = self.loss_fn(y_predict, y, tau)
+            loss = self._loss_fn(y_predict, y, tau)
         else:
-            loss = self.loss_fn(y_predict, y)
+            loss = self._loss_fn(y_predict, y)
 
         self.log("loss", loss)
         return loss
