@@ -9,7 +9,7 @@ def get_loss(loss):
     elif loss == "CPNLL":
         return censored_poisson_negative_log_likelihood
     else:
-        raise NotImplementedError("Loss function not implemented")
+        raise NotImplementedError(f"Loss function \"{loss}\" not implemented")
 
 def poisson_negative_log_likelihood(y_predict, y):
     """ https://en.wikipedia.org/wiki/Poisson_regression#Maximum_likelihood-based_parameter_estimation """
