@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     #parser = temp_args.dataloader.add_data_specific_arguments(parser)
     args = parser.parse_args()
-    
+
     dm = getattr(datasets, temp_args.dataloader)(**vars(args))
 
     '''
