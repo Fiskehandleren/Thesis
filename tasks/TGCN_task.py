@@ -15,6 +15,7 @@ class TGCN_task(pl.LightningModule):
         batch_size: int,
         learning_rate: float = 1e-3,
         weight_decay: float = 1.5e-3,
+        censored= False,
         **kwargs
     ):
         super(TGCN_task, self).__init__()
@@ -26,13 +27,20 @@ class TGCN_task(pl.LightningModule):
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
+        self.censored = censored
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        if self.censored:
+            x, y, tau = batch
+        else:
+            x, y = batch
         y_hat, _ = self.model(x, self.edge_index, self.edge_weight)
         y_hat = y_hat.view(-1, 8)
         
-        loss = self.loss_func(y_hat, y)
+        if self.censored:
+            loss = self.loss_func(y_hat, y, tau)
+        else:
+            loss = self.loss_func(y_hat, y)
         mae = F.l1_loss(y_hat, y)
         mse = F.mse_loss(y_hat, y)
         metrics = {
@@ -44,11 +52,16 @@ class TGCN_task(pl.LightningModule):
         return loss
     
     def validation_step(self, batch, batch_idx):
-        x, y = batch
+        if self.censored:
+            x, y, tau = batch
+        else:
+            x, y = batch
         y_hat, _ = self.model(x, self.edge_index.to(self.device), self.edge_weight.to(self.device))
         y_hat = y_hat.view(-1, 8)
-        
-        loss = self.loss_func(y_hat, y)
+        if self.censored:
+            loss = self.loss_func(y_hat, y, tau)
+        else:
+            loss = self.loss_func(y_hat, y)
         mae = F.l1_loss(y_hat, y)
         mse = F.mse_loss(y_hat, y)
         metrics = {

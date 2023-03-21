@@ -28,8 +28,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_name", type=str, help="The name of the model for spatiotemporal prediction", 
         choices=("AR", "AR_Net", "DeepAR", "TemporalGCN"), required=True)
     
-    parser.add_argument("--loss", type=str, help="Loss function to use", default="PNLL", choices=("mse", "PNLL"))
-    parser.add_argument("--censored", type=bool, help="Use censored setting", default=False)
+    parser.add_argument("--loss", type=str, help="Loss function to use", default="PNLL", choices=("mse", "PNLL", "CPNLL"))
 
     temp_args, _ = parser.parse_known_args()
     parser = getattr(models, temp_args.model_name).add_model_specific_arguments(parser)
@@ -44,7 +43,11 @@ if __name__ == "__main__":
     model = get_model(args, dm)
 
     if args.model_name == "TemporalGCN":
-        task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
+        if args.censored:
+            assert args.loss == "CPNLL", "Censored data only works with PNLL loss"
+            task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
+        else:
+            task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
     else:
         loss_fn = get_loss(args)
         task = AR_Task(model, **vars(args))

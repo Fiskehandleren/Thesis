@@ -134,7 +134,7 @@ def get_graph(df, adjecency_threshold_km=3):
     return G, adj, edge_index, edge_weight.float()   
 
 
-def get_targets_and_features_tgcn(df, lags=30, add_month=True, add_hour=True, add_day_of_week=True, add_year=True):
+def get_targets_and_features_tgcn(df, lags=30, censored=True, add_month=True, add_hour=True, add_day_of_week=True, add_year=True):
     df_test = df.copy()
     features, new_cols = [], []
     if add_month:
@@ -153,6 +153,10 @@ def get_targets_and_features_tgcn(df, lags=30, add_month=True, add_hour=True, ad
         df_test['year'] = df.Period.dt.year - df.Period.dt.year.min()
         features.append('year')
     
+    # If the dataset is censored, we want to remove the threshhold of each node from the features 
+    if censored:
+        features = features + list(df.filter(like='_TAU').columns)
+
     node_names = df_test.columns.difference(['Period'] + features)
     num_nodes = len(node_names)
 
@@ -181,9 +185,18 @@ def get_targets_and_features_tgcn(df, lags=30, add_month=True, add_hour=True, ad
     # Repeat the time features 8 times because we have 8 nodes, and the 
     # period is the same across all nodes
     times = times.repeat(num_nodes, axis=1)
+
+    if censored:
+        _tau = np.array(df_test.filter(like='_TAU'), dtype=int)
+        tau = np.array([
+            _tau[i + lags, :].T
+            for i in range(_tau.shape[0] - lags)
+        ])
+    else:
+        tau = None
     
     # The `feat` matrix will go from (time_length, nodes, lags) to (time_length, nodes, number of features, lags)
     # We repeat the date-specific features 8 times because we have 8 nodes. 
     X = np.concatenate((lag_feats, times), axis=2)
 
-    return X, y
+    return X, y, tau

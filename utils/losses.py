@@ -1,6 +1,7 @@
 import torch
 from scipy.stats import poisson
 from torch import nn
+import numpy as np
 
 def get_loss(loss):
     if loss == "mse":
@@ -36,14 +37,14 @@ def poisson_cdf_non_identical(k, lamb):
     max_k_int = torch.max(k_int)
     # Matrix of 0-max_k_int repeated n times across columns, each column being reserved for one value of lambda. 
     # so each columns is a range of 0-max_k_int.
-    k_mtrx = torch.repeat_interleave(torch.arange(0, max_k_int+1), n).view(max_k_int+1, n)
+    if lamb.ndim == 1:
+        k_mtrx = torch.repeat_interleave(torch.arange(0, max_k_int+1), n).view(max_k_int+1, n)
     # Calculate the pdf of 0, 1, .., max_k_int for each lambda.
     pdf_mtrx = _pois.log_prob(k_mtrx).exp()
-    print("torch.max(k_int)", torch.max(k_int))
     for i in range(len(k)):
         # Sum the pdf of 0, 1, .., k_int[i] for each lambda to get the cdf for each k
         cdf[i] = torch.sum(pdf_mtrx[:k_int[i]+1,i])
-    return cdf
+    return cdf.round(decimals=6)
 
 def censored_poisson_negative_log_likelihood(y_predict, y, C):
     """ 
@@ -54,8 +55,10 @@ def censored_poisson_negative_log_likelihood(y_predict, y, C):
     pois = torch.distributions.poisson.Poisson(y_predict)
 
     # Pytorch doesn't have the cdf function for the poisson distribution
-    poiss_cdf = 1 - poisson_cdf(k=C-1, lamb=y_predict) # Is C-1 correct?
-
+    poiss_cdf = torch.zeros(y_predict.shape)
+    for i in range(y_predict.shape[1]):
+        poiss_cdf[:,i] = 1 - poisson_cdf_non_identical(k=C[:,i]-1, lamb=y_predict[:,i]) # Is C-1 correct?
+    poiss_cdf += 1e-8
     d_t = (C > y).int()
 
     return -torch.sum((d_t * pois.log_prob(y)) + ((1-d_t) * (torch.log(poiss_cdf)))) #Do we sum on the correct axis here?
