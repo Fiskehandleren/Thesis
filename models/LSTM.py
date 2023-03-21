@@ -1,11 +1,12 @@
 
 import torch
 from torch import nn
+import argparse
 
-class ShallowRegressionLSTM(nn.Module):
-    def __init__(self, num_sensors, hidden_units):
+class LSTM(nn.Module):
+    def __init__(self, input_dim, hidden_units):
         super().__init__()
-        self.num_sensors = num_sensors  # this is the number of features
+        self.input_dim = input_dim  # this is the number of features
         self.hidden_units = hidden_units
         self.num_layers = 1
 
@@ -30,5 +31,13 @@ class ShallowRegressionLSTM(nn.Module):
         #out = self.activation(out)
 
         return out.exp()
+    
+    
+    @staticmethod
+    def add_model_specific_arguments(parent_parser):
+        parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument("--hidden_dim", type=int, default=72)
+        parser.add_argument("--output_dim", type=int, default=1)
+        return parser
 
         #return out

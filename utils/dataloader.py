@@ -204,6 +204,11 @@ def get_targets_and_features_tgcn(df, lags=30, censored=True, add_month=True, ad
 
     return X, y, tau
 
+ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
+
+
+def load_data():
+    path = os.path.join(ROOT_PATH, '../data/ChargePoint Data CY20Q4.csv')
 
 def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_day_of_week=True, add_year=True, train_start='2016-07-01 00:00:00', 
                    train_end = '2017-07-01 00:00:00', test_start='2017-07-01 00:00:30', test_end='2017-08-01 00:00:00', is_censored = False,
@@ -217,9 +222,13 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
     ## TODO: add option for validation set
 
     target_var = target
-    df_test = df.copy()
     if (is_censored == True):
         ## ATTEMPT: shift tau variable too
+        path = os.path.join(ROOT_PATH, '../data/charging_session_count_1_to_30_censored_at_2.csv')
+        df = pd.read_csv(path, parse_dates=['Period'])
+
+        df_test = df.copy()
+
         df_test[target_var + '_TAU'] = df_test[target_var + '_TAU'].shift(-forecast_lead)
 
         if (multiple_stations == True):
@@ -245,6 +254,11 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
 
     else:
         ## keep everything from input dataframe
+        path = os.path.join(ROOT_PATH, '../data/charging_session_count_1_to_30.csv')
+        df = pd.read_csv(path, parse_dates=['Period'])
+        
+        df_test = df.copy()
+
         features = df_test.columns.values
 
         if (multiple_stations == False):
