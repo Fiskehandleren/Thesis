@@ -1,7 +1,5 @@
 import torch
-from scipy.stats import poisson
 from torch import nn
-import numpy as np
 
 def get_loss(loss):
     if loss == "mse":
@@ -44,6 +42,8 @@ def poisson_cdf_non_identical(k, lamb):
     for i in range(len(k)):
         # Sum the pdf of 0, 1, .., k_int[i] for each lambda to get the cdf for each k
         cdf[i] = torch.sum(pdf_mtrx[:k_int[i]+1,i])
+
+    # Sometimes we get a cdf of 1.0000001, which is not allowed. So we set it to 1.
     return cdf.round(decimals=6)
 
 
@@ -66,6 +66,9 @@ def censored_poisson_negative_log_likelihood(y_predict, y, C):
 
 def censored_poisson_negative_log_likelihood_tgcn(y_predict, y, C):
     """ 
+    Censored Poisson Negative Log Likelihood for the TGCN. Here we do some hacks to calculate
+    the correct loss for each node in the graph.
+
     y_predict: lambda for Poisson
     y: observed data
     C: censoring threshold
