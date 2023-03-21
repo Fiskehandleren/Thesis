@@ -67,8 +67,8 @@ if __name__ == "__main__":
         else:
             task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
     else:
-        loss_fn = get_loss(args)
-        task = AR_Task(model, **vars(args))
-        
+        loss_fn = get_loss(args.loss)
+        task = AR_Task(model, loss_fn = loss_fn, **vars(args))
+
     trainer = pl.Trainer.from_argparse_args(args)
     trainer.fit(task, dm)
