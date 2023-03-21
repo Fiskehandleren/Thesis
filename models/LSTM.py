@@ -11,7 +11,7 @@ class LSTM(nn.Module):
         self.num_layers = 1
 
         self.lstm = nn.LSTM(
-            input_size=num_sensors,
+            input_size=input_dim,
             hidden_size=hidden_units,
             batch_first=True,
             num_layers=self.num_layers

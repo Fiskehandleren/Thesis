@@ -17,7 +17,7 @@ def get_model(args, dm):
     elif args.model_name == "AR_Net":
         model = models.AR_Net(input_dim=dm.seq_len, output_dim=dm.pred_len, hidden_dim=args.hidden_dim)
     elif args.model_name == "LSTM": 
-        model = models.LSTM(num_sensors=dm.seq_len, hidden_units = args.hidden_dim)
+        model = models.LSTM(input_dim=dm.input_dimensions, hidden_units = args.hidden_dim)
     elif args.model_name == "TemporalGCN":
        model = models.TemporalGCN(node_features=dm.X_train.shape[2], hidden_dim=args.hidden_dim, time_steps=args.lags, batch_size=args.batch_size)
     elif model is None:
@@ -69,5 +69,6 @@ if __name__ == "__main__":
     else:
         loss_fn = get_loss(args)
         task = AR_Task(model, **vars(args))
+        
     trainer = pl.Trainer.from_argparse_args(args)
     trainer.fit(task, dm)
