@@ -6,6 +6,7 @@ import utils.dataloader as dataloader
 import argparse
 import torch
 
+ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 class EVChargersDataset(pl.LightningDataModule):
     def __init__(
@@ -31,8 +32,8 @@ class EVChargersDataset(pl.LightningDataModule):
         self.test_start = test_start
         self.censored = censored
 
-        dataset_name = f'charging_session_count_1_to_30{"_censored_dynamic" if self.censored else ""}.csv'
-        if not os.path.exists(os.path.join(feat_path, dataset_name)):
+        dataset_name = f'../data/charging_session_count_1_to_30{"_censored_dynamic" if self.censored else ""}.csv'
+        if not os.path.exists(os.path.join(ROOT_PATH, dataset_name)):
             print(f'Dataset "{dataset_name}" not found locally. Creating dataset...')
             self.df = dataloader.load_data()
             self._feat = dataloader.create_count_data(self.df, 30, save=True, censored=self.censored)
@@ -76,7 +77,7 @@ class EVChargersDataset(pl.LightningDataModule):
 
 
     def setup(self, stage=None):
-        if self.spatial:
+        if self.censored:
             self.train_dataset = CensoredSpatialDataset(
                 torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train), torch.FloatTensor(self.tau_train)
             )
@@ -97,8 +98,8 @@ class EVChargersDataset(pl.LightningDataModule):
         parser.add_argument("--batch_size", type=int, default=32)
         parser.add_argument("--covariates", help="Add covariates to the dataset", type=bool, default=False)
         parser.add_argument("--cluster", type=str, help="Which cluster to fit an AR model to")
-        parser.add_argument("--spatial", type=bool, default=True)
-        parser.add_argument("--censored", type=bool, default=True)
+        parser.add_argument("--spatial", type=bool, default=False, action='store_true')
+        parser.add_argument("--censored", type=bool, default=False, action='store_true')
         parser.add_argument("--lags", type=int, default=30)
         parser.add_argument("--session_minutes", type=int, default=30)
         parser.add_argument("--train_start", type=str, required=True)
