@@ -58,6 +58,7 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
                                                                                                  test_start = self.test_start, test_end = self.test_end, is_censored = self.censored,
                                                                                                  multiple_stations=False)
 
+        self.input_dimensions = len(self.features)
 
     def train_dataloader(self):
         train_dataset = dataloader.SequenceDataset(self.df_train, self.target, self.features, self.tau, self.sequence_length)
