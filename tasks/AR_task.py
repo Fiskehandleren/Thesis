@@ -7,6 +7,9 @@ class AR_Task(pl.LightningModule):
         self,
         model,
         loss_fn,
+        censored,
+        regressor="linear",
+        pred_len: int = 2*24,
         learning_rate: float = 1e-3,
         weight_decay: float = 1.5e-3,
         feat_max_val: float = 1.0,
@@ -14,6 +17,7 @@ class AR_Task(pl.LightningModule):
     ):
         super(AR_Task, self).__init__()
         self.save_hyperparameters()
+        self.censored = censored
         self.model = model
         self._loss_fn = loss_fn
         self.feat_max_val = feat_max_val
@@ -23,11 +27,18 @@ class AR_Task(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         # Run forward calculation
-        x, y = batch
+        if self.censored == True:
+            x, y, tau = batch
+        else:
+            x, y = batch
+
         y_predict = self(x)
 
         # Compute loss.
-        loss = self._loss_fn(y_predict, y)
+        if self.censored == True:
+            loss = self.loss_fn(y_predict, y, tau)
+        else:
+            loss = self.loss_fn(y_predict, y)
 
         self.log("loss", loss)
         return loss

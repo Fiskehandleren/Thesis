@@ -42,7 +42,7 @@ def poisson_cdf_non_identical(k, lamb):
     for i in range(len(k)):
         # Sum the pdf of 0, 1, .., k_int[i] for each lambda to get the cdf for each k
         cdf[i] = torch.sum(pdf_mtrx[:k_int[i]+1,i])
-
+    
     # Sometimes we get a cdf of 1.0000001, which is not allowed. So we set it to 1.
     return cdf.round(decimals=6)
 
