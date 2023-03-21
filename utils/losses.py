@@ -46,7 +46,24 @@ def poisson_cdf_non_identical(k, lamb):
         cdf[i] = torch.sum(pdf_mtrx[:k_int[i]+1,i])
     return cdf.round(decimals=6)
 
+
 def censored_poisson_negative_log_likelihood(y_predict, y, C):
+    """ 
+    y_predict: lambda for Poisson
+    y: observed data
+    C: censoring threshold
+    https://findit.dtu.dk/en/catalog/53282c10c18e77205dd0f8ae """
+    pois = torch.distributions.poisson.Poisson(y_predict)
+
+    # Pytorch doesn't have the cdf function for the poisson distribution
+    poiss_cdf = 1 - poisson_cdf_non_identical(k=C-1, lamb=y_predict) # Is C-1 correct?
+    poiss_cdf += 1e-8
+    d_t = (C > y).int()
+
+    return -torch.sum((d_t * pois.log_prob(y)) + ((1-d_t) * (torch.log(poiss_cdf)))) #Do we sum on the correct axis here?
+
+
+def censored_poisson_negative_log_likelihood_tgcn(y_predict, y, C):
     """ 
     y_predict: lambda for Poisson
     y: observed data
