@@ -8,10 +8,9 @@ import argparse
 import torch
 
 
-class EVChargersDatasetNN(pl.LightningDataModule):
+class EVChargersDatasetLSTM(pl.LightningDataModule):
     def __init__(
         self,
-        feat_path: str,
         covariates: bool,
         batch_size: int,
         lags: int,
@@ -25,14 +24,13 @@ class EVChargersDatasetNN(pl.LightningDataModule):
         train_end: str,
         test_start: str,
         test_end: str,
-        val_start: str,
-        val_end: str,
+        #val_start: str,
+        #val_end: str,
         **kwargs
     ):
         
         super().__init__()
-        self._feat_path = feat_path
-        self.coverariates = covariates
+        self.covariates = covariates
         self.batch_size = batch_size
         self.lags = lags
         self.model = model
@@ -44,16 +42,17 @@ class EVChargersDatasetNN(pl.LightningDataModule):
         self.test_end = test_end
         self.censored = censored
         self.multiple_stations = multiple_stations
+        self.sequence_length = sequence_length
     
         if (self.model == 'LSTM'):
-            self.df_train, self.df_test, self.features, self.target = dataloader.get_datasets_NN(target = self.cluster, add_month=self.coverariates, add_hour = self.covariates,
-                                                                                                 add_day_of_week=self.coverariates, add_year = self.covariates,
+            self.df_train, self.df_test, self.features, self.target = dataloader.get_datasets_NN(target = self.cluster, forecast_lead = self.lags, add_month=self.covariates, 
+                                                                                                 add_hour = self.covariates, add_day_of_week=self.covariates, add_year = self.covariates,
                                                                                                  train_start = self.train_start, train_end = self.train_end, 
                                                                                                  test_start = self.test_start, test_end = self.test_end, is_censored = self.censored,
                                                                                                  multiple_stations=self.multiple_stations)
 
         else:
-            self.df_train, self.df_test, self.features, self.target = dataloader.get_datasets_NN(target = self.cluster, add_month=False, add_hour = False,
+            self.df_train, self.df_test, self.features, self.target = dataloader.get_datasets_NN(target = self.cluster, forecast_lead = self.lags, add_month=False, add_hour = False,
                                                                                                  add_day_of_week=False, add_year = False,
                                                                                                  train_start = self.train_start, train_end = self.train_end, 
                                                                                                  test_start = self.test_start, test_end = self.test_end, is_censored = self.censored,
@@ -62,7 +61,6 @@ class EVChargersDatasetNN(pl.LightningDataModule):
 
     def train_dataloader(self):
         train_dataset = dataloader.SequenceDataset(self.df_train, self.target, self.features, self.tau, self.sequence_length)
-
         return DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
 
     def test_dataloader(self):
@@ -84,7 +82,7 @@ class EVChargersDatasetNN(pl.LightningDataModule):
     @staticmethod
     def add_data_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--batch_size", type=int, default=32)
+        parser.add_argument("--batch_size", type=int, default=4)
         parser.add_argument("--covariates", help="Add covariates to the dataset", type=bool, default=False)
         parser.add_argument("--cluster", type=str, help="Which cluster to fit model to")
         parser.add_argument("--model", type=str, help="Type of model", default = 'LSTM')
