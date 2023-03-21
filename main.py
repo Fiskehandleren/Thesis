@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     if args.model_name == "TemporalGCN":
         if args.censored:
-            assert args.loss == "CPNLL", "Censored data only works with PNLL loss"
+            assert args.loss == "CPNLL", "Censored data only works with CPNLL loss"
             task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
         else:
             task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
