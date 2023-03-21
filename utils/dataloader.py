@@ -1,7 +1,10 @@
 import numpy as np
 import pandas as pd
 import datetime 
+
+from torch.utils.data import Dataset
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
+import torch 
 import networkx as nx
 from haversine import haversine, Unit
 import os
@@ -187,3 +190,140 @@ def get_targets_and_features_tgcn(df, lags=30, add_month=True, add_hour=True, ad
     X = np.concatenate((lag_feats, times), axis=2)
 
     return X, y
+
+
+
+
+
+
+def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_day_of_week=True, add_year=True, train_start='2016-07-01 00:00:00', 
+                   train_end = '2017-07-01 00:00:00', test_start='2017-07-01 00:00:30', test_end='2017-08-01 00:00:00', is_censored = False,
+                   multiple_stations = False):
+    
+    ## Function to load data sets, add covariates and split into training and test set. Has option to censor the input data (arg. is_censored) and 
+    ## has option to use several stations to predict demand of one station (arg. multiple_stations)
+
+    ## Output: training set, test set, list of explanatory variables (features) and list of targets (target)
+    
+    ## TODO: add option for validation set
+
+    target_var = target
+    df_test = df.copy()
+    if (is_censored == True):
+        ## ATTEMPT: shift tau variable too
+        df_test[target_var + '_TAU'] = df_test[target_var + '_TAU'].shift(-forecast_lead)
+
+        if (multiple_stations == True):
+            
+            ## keep data from other stations, the period and threshold tau for target variable
+            features = [v for v in df_test.columns if target + '_TAU' in v]
+            other_stations = [v for v in df_test.columns if '_TAU' not in v]
+            features.extend(other_stations)
+
+            df_test = df_test[features]
+
+            ## Remove tau so it isnt and input feature
+            features.remove(target + '_TAU')
+
+        else:
+            features = [v for v in df_test.columns if target in v]
+            features.append('Period')
+            df_test = df_test[features]
+
+            print(features)
+            ## Remove tau so it isnt and input feature
+            features.remove(target + '_TAU')
+
+    else:
+        ## keep everything from input dataframe
+        features = df_test.columns.values
+
+        if (multiple_stations == False):
+            ## Keep only data from target station and the period 
+            features = [station for station in df_test.columns if target in station]
+            features.append('Period')
+            df_test = df_test[features]
+
+   
+
+    if (type(train_end) != int):
+        train_start = df_test[df_test['Period'] == train_start].index.values[0]
+        train_end = df_test[df_test['Period'] == train_end].index.values[0]
+        test_start = df_test[df_test['Period'] == test_start].index.values[0]
+        test_end = df_test[df_test['Period'] == test_end].index.values[0]
+
+    # Create target variable. We might have more targets if we're running 
+    # multivariate models
+
+    forecast_lead = 24
+    if isinstance(target_var, list):
+        target = [f"{var}_lead{forecast_lead}" for var in target_var]
+    else:
+        target = f"{target_var}_lead{forecast_lead}"
+    
+    ## Shift target variable(s)
+    df_test[target] = df_test[target_var].shift(-forecast_lead)
+    df_test = df_test.iloc[:-forecast_lead]
+
+
+    new_cols = []
+    if add_month:
+        df_test['month'] = df.Period.dt.month
+        df_test, new_cols = cyclical_encode(df_test, 'month', 12)
+        features.extend(new_cols)
+        #features = features + new_cols
+    if add_day_of_week:
+        df_test['dayofweek'] = df.Period.dt.dayofweek
+        df_test, new_cols = cyclical_encode(df_test, 'dayofweek', 7)
+        features.extend(new_cols)
+        #features = features + new_cols
+    if add_hour:
+        df_test['hour'] = df.Period.dt.hour
+        df_test, new_cols = cyclical_encode(df_test, 'hour', 24)
+        features.extend(new_cols)
+        #features = features + new_cols
+    if add_year:
+        df_test['year'] = df.Period.dt.year - df.Period.dt.year.min()
+        features.append('year')
+
+
+    ## Create train/test set
+    df_train = df_test.loc[train_start:train_end].copy()
+    df_test = df_test.loc[test_start:test_end].copy()
+
+    features.remove('Period')
+
+    #print("Test set fraction:", len(df_test) / len(df_train))
+    return df_train, df_test, features, target
+
+
+class SequenceDataset(Dataset):
+    ## Class to retrieve time series elements appropirately with CENSORED target variable y
+    def __init__(self, dataframe, target, features, threshold=None, sequence_length=5):
+        self.features = features
+        self.target = target
+        self.sequence_length = sequence_length
+        self.y = torch.tensor(dataframe[target].values).float()
+        self.X = torch.tensor(dataframe[features].values).float()
+
+        if threshold is not None:
+            self.tau = torch.tensor(dataframe[threshold].values).float()
+        
+        
+    def __len__(self):
+        return self.X.shape[0]
+
+    def __getitem__(self, i):
+        if i >= self.sequence_length - 1:
+            i_start = i - self.sequence_length + 1
+            x = self.X[i_start:(i + 1), :]
+        else:
+            padding = self.X[0].repeat(self.sequence_length - i - 1, 1)
+            x = self.X[0:(i + 1), :]
+            x = torch.cat((padding, x), 0)
+
+        if self.tau is not None:
+            return x, self.y[i], self.tau[i]
+        else:
+            return x, self.y[i]
+        
