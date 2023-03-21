@@ -14,7 +14,6 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
         covariates: bool,
         batch_size: int,
         lags: int,
-        model: str,
         censored: bool,
         tau: str,
         cluster: bool,
@@ -33,7 +32,6 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
         self.covariates = covariates
         self.batch_size = batch_size
         self.lags = lags
-        self.model = model
         self.cluster = cluster
         self.tau = tau
         self.train_start = train_start
@@ -86,7 +84,6 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
         parser.add_argument("--batch_size", type=int, default=4)
         parser.add_argument("--covariates", help="Add covariates to the dataset", type=bool, default=False)
         parser.add_argument("--cluster", type=str, help="Which cluster to fit model to", default = 'WEBSTER')
-        parser.add_argument("--model", type=str, help="Type of model", default = 'LSTM')
         parser.add_argument("--lags", type=int, default=30)
         parser.add_argument("--censored", type=bool, default = False, help= "Censor data at cap. tau")
         parser.add_argument("--tau", type=str, help="Column name of censoring variable")

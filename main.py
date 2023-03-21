@@ -13,9 +13,9 @@ logger = logging.getLogger('Thesis.Train')
 def get_model(args, dm):
     model = None
     if args.model_name == "AR":
-        model = models.AR(input_dim=dm.seq_len, output_dim=2*24)
+        model = models.AR(input_dim=dm.lags, output_dim=2*24)
     elif args.model_name == "AR_Net":
-        model = models.AR_Net(input_dim=dm.seq_len, output_dim=dm.pred_len, hidden_dim=args.hidden_dim)
+        model = models.AR_Net(input_dim=dm.lags, output_dim=dm.pred_len, hidden_dim=args.hidden_dim)
     elif args.model_name == "LSTM": 
         model = models.LSTM(input_dim=dm.input_dimensions, hidden_units = args.hidden_dim)
     elif args.model_name == "TemporalGCN":
@@ -64,11 +64,9 @@ if __name__ == "__main__":
         if args.censored:
             assert args.loss == "CPNLL", "Censored data only works with CPNLL loss"
             task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
-        else:
-            task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
     else:
-        loss_fn = get_loss(args)
-        task = AR_Task(model, **vars(args))
+        loss_fn = get_loss(args.loss)
+        task = AR_Task(model, loss_fn=loss_fn, **vars(args))
         
     trainer = pl.Trainer.from_argparse_args(args)
     trainer.fit(task, dm)

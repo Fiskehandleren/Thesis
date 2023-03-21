@@ -7,8 +7,6 @@ class AR_Task(pl.LightningModule):
         self,
         model,
         loss_fn,
-        regressor="linear",
-        pred_len: int = 2*24,
         learning_rate: float = 1e-3,
         weight_decay: float = 1.5e-3,
         feat_max_val: float = 1.0,
