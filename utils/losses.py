@@ -30,7 +30,6 @@ def poisson_cdf_non_identical(k, lamb):
     """ If k is not a tensor of idential shape to lamb, this will still work.
         k: tensor of shape (n) !! ALWAYS INTEGER !!
     """
-    print(lamb.shape)
     _pois = torch.distributions.Poisson(lamb) # Initialize Poisson distribution with rates
     cdf = torch.zeros(k.shape) # placeholder
     n = len(k) # number of samples
