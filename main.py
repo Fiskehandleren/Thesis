@@ -30,7 +30,7 @@ if __name__ == "__main__":
     parser = pl.Trainer.add_argparse_args(parser)
 
     parser.add_argument("--model_name", type=str, help="The name of the model for spatiotemporal prediction", 
-        choices=("AR", "AR_Net", "DeepAR", "LSTM", "TemporalGCN"), required=True)
+        choices=("AR", "AR_Net", "LSTM", "TemporalGCN"), required=True)
     
     parser.add_argument("--dataloader", type=str, help="Name of dataloader", choices=("EVChargersDataset", "EVChargersDatasetLSTM"), required = True)
 
@@ -61,3 +61,5 @@ if __name__ == "__main__":
 
     trainer = pl.Trainer.from_argparse_args(args)
     trainer.fit(task, dm)
+    trainer.test(task, datamodule=dm)
+    trainer.save_checkpoint("best_model_{args.model_name}_{args.loss}_{}.ckpt")
