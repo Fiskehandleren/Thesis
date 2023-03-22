@@ -2,6 +2,7 @@ import argparse
 import torch.optim
 import torch.nn.functional as F
 import pytorch_lightning as pl
+from torch import sqrt
 
 from utils.losses import get_loss
 
@@ -41,11 +42,10 @@ class TGCN_task(pl.LightningModule):
             loss = self.loss_func(y_hat, y, tau)
         else:
             loss = self.loss_func(y_hat, y)
-        mae = F.l1_loss(y_hat, y)
         mse = F.mse_loss(y_hat, y)
         metrics = {
             "train_loss": loss,
-            "train_mae": mae,
+            "train_rmse": sqrt(mse),
             "train_mse": mse
         }
         self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
@@ -62,11 +62,10 @@ class TGCN_task(pl.LightningModule):
             loss = self.loss_func(y_hat, y, tau)
         else:
             loss = self.loss_func(y_hat, y)
-        mae = F.l1_loss(y_hat, y)
         mse = F.mse_loss(y_hat, y)
         metrics = {
             "val_loss": loss,
-            "val_mae": mae,
+            "val_rmse": sqrt(mse),
             "val_mse": mse
         }
         self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
@@ -87,7 +86,7 @@ class TGCN_task(pl.LightningModule):
         mse = F.mse_loss(y_hat, y)
         metrics = {
             "test_loss": loss,
-            "test_mae": mae,
+            "test_rmse": sqrt(mse),
             "test_mse": mse
         }
         self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
