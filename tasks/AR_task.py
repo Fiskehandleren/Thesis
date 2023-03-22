@@ -1,31 +1,32 @@
 from torch import nn
 import pytorch_lightning as pl
 from torch import optim
+import argparse 
 
 class AR_Task(pl.LightningModule):
     def __init__(
         self,
-        model,
+        input_dim,
+        output_dim,
         loss_fn,
         censored,
-        regressor="linear",
-        pred_len: int = 2*24,
         learning_rate: float = 1e-3,
         weight_decay: float = 1.5e-3,
         feat_max_val: float = 1.0,
         **kwargs
     ):
-        super(AR_Task, self).__init__()
+        super().__init__()
         self.save_hyperparameters()
         self.censored = censored
-        self.model = model
         self._loss_fn = loss_fn
         self.feat_max_val = feat_max_val
-        print(self.censored)
+        self.fc1 = nn.Linear(input_dim, output_dim) 
 
     def forward(self, x):
-        return self.model(x)
-
+        x = x.view(x.shape[0], -1)
+        out = self.fc1(x)
+        return out.exp()
+    
     def training_step(self, batch, batch_idx):
         # Run forward calculation
         if self.censored == True:
@@ -48,3 +49,8 @@ class AR_Task(pl.LightningModule):
         optimizer = optim.Adam(self.parameters(), lr=1e-3)
         return optimizer
     
+    @staticmethod
+    def add_model_specific_arguments(parent_parser):
+        parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument("--output_dim", type=int, default=8)
+        return parser
