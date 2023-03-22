@@ -48,7 +48,7 @@ class TGCN_task(pl.LightningModule):
             "train_mae": mae,
             "train_mse": mse
         }
-        self.log_dict(metrics)
+        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
         return loss
     
     def validation_step(self, batch, batch_idx):

@@ -16,7 +16,7 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
         forecast_lead: int,
         censored: bool,
         tau: str,
-        cluster: bool,
+        cluster: str,
         multiple_stations: bool,
         sequence_length: int,
         hidden_dim: int,
@@ -30,17 +30,19 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
     ):
         
         super().__init__()
+        print(tau)
         self.covariates = covariates
         self.batch_size = batch_size
         self.forecast_lead = forecast_lead
         self.cluster = cluster
-        self.tau = tau
+        self.censored = censored
+        if self.censored:
+            self.tau = cluster + '_TAU' 
         self.hidden_dim = hidden_dim
         self.train_start = train_start
         self.train_end = train_end
         self.test_start = test_start
         self.test_end = test_end
-        self.censored = censored
         self.multiple_stations = multiple_stations
         self.sequence_length = sequence_length
     
@@ -79,7 +81,7 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
         parser.add_argument("--covariates", help="Add covariates to the dataset", type=bool, default=False)
         parser.add_argument("--cluster", type=str, help="Which cluster to fit model to", default = 'WEBSTER')
         parser.add_argument("--forecast_lead", type=int, default=24)
-        parser.add_argument("--censored", type=bool, default = False, help= "Censor data at cap. tau")
+        parser.add_argument("--censored", action='store_true', default = False, help= "Censor data at cap. tau")
         parser.add_argument("--tau", type=str, help="Column name of censoring variable")
         parser.add_argument("--hidden_dim", type=int, help="AR_net/LSTM require number of hidden dimensions/units", default = 64)
         parser.add_argument("--train_start", type=str, required=True)
