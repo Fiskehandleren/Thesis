@@ -81,7 +81,7 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
         parser.add_argument("--forecast_lead", type=int, default=24)
         parser.add_argument("--censored", action='store_true', default = False, help= "Censor data at cap. tau")
         parser.add_argument("--censor_level", default = 1, help = "Choose censorship level")
-        parser.add_argument("--hidden_dim", type=int, help="AR_net/LSTM require number of hidden dimensions/units", default = 64)
+        parser.add_argument("--hidden_dim", type=int, help="AR_net/LSTM/GRU require number of hidden dimensions/units", default = 64)
         parser.add_argument("--train_start", type=str, required=True)
         parser.add_argument("--train_end", type=str, required=True)
         parser.add_argument("--test_end", type=str, required=True)
