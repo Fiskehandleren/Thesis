@@ -28,7 +28,7 @@ class TemporalGCN(torch.nn.Module):
     @staticmethod
     def add_model_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--hidden_dim", type=int, default=128)
+        parser.add_argument("--hidden_dim", type=int, default=64)
         return parser
     
     #@property
