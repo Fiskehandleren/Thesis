@@ -15,7 +15,7 @@ def get_model(args, dm):
     if args.model_name == "AR":
         model = models.AR(input_dim=args.sequence_length, output_dim=1)
     elif args.model_name == "AR_Net":
-        model = models.AR_Net(input_dim=dm.lags, output_dim=dm.pred_len, hidden_dim=args.hidden_dim)
+        model = models.AR_Net(input_dim=dm.sequence_length, output_dim=dm.pred_len, hidden_dim=args.hidden_dim)
     elif args.model_name == "LSTM": 
         model = models.LSTM(input_dim=dm.input_dimensions, hidden_units = args.hidden_dim)
     elif args.model_name == "TemporalGCN":
@@ -65,6 +65,8 @@ if __name__ == "__main__":
             assert args.loss == "CPNLL", "Censored data only works with CPNLL loss"
             task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
     else:
+        if (args.model_name == "AR" or args.model_name == "AR_Net"):
+            assert args.covariates, "AR models cannot include covariates"
         loss_fn = get_loss(args.loss)
         task = AR_Task(model, loss_fn = loss_fn, **vars(args))
 

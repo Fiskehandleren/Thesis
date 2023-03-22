@@ -13,12 +13,13 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
         self,
         covariates: bool,
         batch_size: int,
-        lags: int,
+        forecast_lead: int,
         censored: bool,
         tau: str,
         cluster: bool,
         multiple_stations: bool,
         sequence_length: int,
+        hidden_dim: int,
         train_start: str,
         train_end: str,
         test_start: str,
@@ -31,9 +32,10 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
         super().__init__()
         self.covariates = covariates
         self.batch_size = batch_size
-        self.lags = lags
+        self.forecast_lead = forecast_lead
         self.cluster = cluster
         self.tau = tau
+        self.hidden_dim = hidden_dim
         self.train_start = train_start
         self.train_end = train_end
         self.test_start = test_start
@@ -42,19 +44,11 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
         self.multiple_stations = multiple_stations
         self.sequence_length = sequence_length
     
-        if (self.censored == True):
-            self.df_train, self.df_test, self.features, self.target = dataloader.get_datasets_NN(target = self.cluster, forecast_lead = self.lags, add_month=self.covariates, 
-                                                                                                 add_hour = self.covariates, add_day_of_week=self.covariates, add_year = self.covariates,
-                                                                                                 train_start = self.train_start, train_end = self.train_end, 
-                                                                                                 test_start = self.test_start, test_end = self.test_end, is_censored = self.censored,
-                                                                                                 multiple_stations=self.multiple_stations)
-
-        else:
-            self.df_train, self.df_test, self.features, self.target = dataloader.get_datasets_NN(target = self.cluster, forecast_lead = self.lags, add_month=False, add_hour = False,
-                                                                                                 add_day_of_week=False, add_year = False,
-                                                                                                 train_start = self.train_start, train_end = self.train_end, 
-                                                                                                 test_start = self.test_start, test_end = self.test_end, is_censored = self.censored,
-                                                                                                 multiple_stations=False)
+        self.df_train, self.df_test, self.features, self.target = dataloader.get_datasets_NN(target = self.cluster, forecast_lead = self.forecast_lead, add_month=self.covariates, 
+                                                                                                add_hour = self.covariates, add_day_of_week=self.covariates, add_year = self.covariates,
+                                                                                                train_start = self.train_start, train_end = self.train_end, 
+                                                                                                test_start = self.test_start, test_end = self.test_end, is_censored = self.censored,
+                                                                                                multiple_stations=self.multiple_stations)
 
         self.input_dimensions = len(self.features)
 
@@ -84,9 +78,10 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
         parser.add_argument("--batch_size", type=int, default=4)
         parser.add_argument("--covariates", help="Add covariates to the dataset", type=bool, default=False)
         parser.add_argument("--cluster", type=str, help="Which cluster to fit model to", default = 'WEBSTER')
-        parser.add_argument("--lags", type=int, default=30)
+        parser.add_argument("--forecast_lead", type=int, default=24)
         parser.add_argument("--censored", type=bool, default = False, help= "Censor data at cap. tau")
         parser.add_argument("--tau", type=str, help="Column name of censoring variable")
+        parser.add_argument("--hidden_dim", type=int, help="AR_net/LSTM require number of hidden dimensions/units", default = 64)
         parser.add_argument("--train_start", type=str, required=True)
         parser.add_argument("--test_start", type=str, required=True)
         parser.add_argument("--train_end", type=str, required=True)

@@ -287,7 +287,7 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
     df_test[target] = df_test[target_var].shift(-forecast_lead)
     df_test = df_test.iloc[:-forecast_lead]
 
-
+    
     new_cols = []
     if add_month:
         df_test['month'] = df.Period.dt.month
