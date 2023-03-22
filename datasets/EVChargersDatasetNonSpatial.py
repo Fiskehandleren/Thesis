@@ -19,7 +19,6 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
         cluster: str,
         multiple_stations: bool,
         sequence_length: int,
-        hidden_dim: int,
         train_start: str,
         train_end: str,
         test_end: str,
@@ -37,7 +36,6 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
         self.censor_level = censor_level
         if self.censored:
             self.tau = cluster + '_TAU' 
-        self.hidden_dim = hidden_dim
         self.train_start = train_start
         self.train_end = train_end
         self.test_end = test_end
@@ -81,7 +79,6 @@ class EVChargersDatasetLSTM(pl.LightningDataModule):
         parser.add_argument("--forecast_lead", type=int, default=24)
         parser.add_argument("--censored", action='store_true', default = False, help= "Censor data at cap. tau")
         parser.add_argument("--censor_level", default = 1, help = "Choose censorship level")
-        parser.add_argument("--hidden_dim", type=int, help="AR_net/LSTM/GRU require number of hidden dimensions/units", default = 64)
         parser.add_argument("--train_start", type=str, required=True)
         parser.add_argument("--train_end", type=str, required=True)
         parser.add_argument("--test_end", type=str, required=True)
