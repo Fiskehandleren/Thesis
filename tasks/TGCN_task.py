@@ -72,6 +72,27 @@ class TGCN_task(pl.LightningModule):
         self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
         return loss
     
+    def test_step(self, batch, batch_idx):
+        if self.censored:
+            x, y, tau = batch
+        else:
+            x, y = batch
+        y_hat, _ = self.model(x, self.edge_index.to(self.device), self.edge_weight.to(self.device))
+        y_hat = y_hat.view(-1, 8)
+        if self.censored:
+            loss = self.loss_func(y_hat, y, tau)
+        else:
+            loss = self.loss_func(y_hat, y)
+        mae = F.l1_loss(y_hat, y)
+        mse = F.mse_loss(y_hat, y)
+        metrics = {
+            "test_loss": loss,
+            "test_mae": mae,
+            "test_mse": mse
+        }
+        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
+        return loss
+
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
 

@@ -36,7 +36,8 @@ class EVChargersDataset(pl.LightningDataModule):
         self.test_end = test_end
         self.censored = censored
 
-        dataset_name = f'../data/charging_session_count_1_to_30{"_censored_dynamic" if self.censored else ""}.csv'
+        # TODO add specific censor strategy
+        dataset_name = f'../data/charging_session_count_1_to_30{"_censored_4" if self.censored else ""}.csv'
         if not os.path.exists(os.path.join(ROOT_PATH, dataset_name)):
             print(f'Dataset "{dataset_name}" not found locally. Creating dataset...')
             self.df = dataloader.load_data()
@@ -111,6 +112,8 @@ class EVChargersDataset(pl.LightningDataModule):
         parser.add_argument("--session_minutes", type=int, default=30)
         parser.add_argument("--train_start", type=str, required=True)
         parser.add_argument("--train_end", type=str, required=True)
+        parser.add_argument("--val_start", type=str, required=True)
+        parser.add_argument("--val_end", type=str, required=True)
         parser.add_argument("--test_start", type=str, required=True)
         parser.add_argument("--test_end", type=str, required=True)
 
