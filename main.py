@@ -34,35 +34,24 @@ if __name__ == "__main__":
     
     parser.add_argument("--dataloader", type=str, help="Name of dataloader", choices=("EVChargersDataset", "EVChargersDatasetLSTM"), required = True)
 
-    parser.add_argument("--loss", type=str, help="Loss function to use", default="PNLL", choices=("mse", "PNLL", "CPNLL"))
+    parser.add_argument("--loss", type=str, help="Loss function to use", default="PNLL", choices=("mse", "PNLL", "CPNLL", "CPNLL_TGCN"))
 
     temp_args, _ = parser.parse_known_args()
     parser = getattr(models, temp_args.model_name).add_model_specific_arguments(parser)
     parser = getattr(datasets, temp_args.dataloader).add_data_specific_arguments(parser)
 
-    #parser = temp_args.dataloader.add_data_specific_arguments(parser)
     args = parser.parse_args()
 
     dm = getattr(datasets, temp_args.dataloader)(**vars(args))
 
-    '''
-    if temp_args.model_name == "LSTM":
-        parser = EVChargersDatasetLSTM.add_data_specific_arguments(parser)
-        dm = EVChargersDatasetLSTM(**vars(args))
-    else:
-        dm = EVChargersDataset(feat_path='data', **vars(args))
-    '''
-
     # Print arguments
-
-
     print(args)
     
     model = get_model(args, dm)
 
     if args.model_name == "TemporalGCN":
         if args.censored:
-            assert args.loss == "CPNLL", "Censored data only works with CPNLL loss"
+            assert args.loss == "CPNLL_TGCN", "Censored data only works with CPNLL_TGCN loss. Rerun with --loss CPNLL_TGCN"
             task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
     else:
         loss_fn = get_loss(args.loss)
