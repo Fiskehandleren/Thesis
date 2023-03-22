@@ -8,6 +8,8 @@ def get_loss(loss):
         return nn.PoissonNLLLoss(log_input=False)
     elif loss == "CPNLL":
         return censored_poisson_negative_log_likelihood
+    elif loss == "CPNLL_TGCN":
+        return censored_poisson_negative_log_likelihood_tgcn
     else:
         raise NotImplementedError(f"Loss function \"{loss}\" not implemented")
 
@@ -35,8 +37,7 @@ def poisson_cdf_non_identical(k, lamb):
     max_k_int = torch.max(k_int)
     # Matrix of 0-max_k_int repeated n times across columns, each column being reserved for one value of lambda. 
     # so each columns is a range of 0-max_k_int.
-    if lamb.ndim == 1:
-        k_mtrx = torch.repeat_interleave(torch.arange(0, max_k_int+1), n).view(max_k_int+1, n)
+    k_mtrx = torch.repeat_interleave(torch.arange(0, max_k_int+1), n).view(max_k_int+1, n)
     # Calculate the pdf of 0, 1, .., max_k_int for each lambda.
     pdf_mtrx = _pois.log_prob(k_mtrx).exp()
     for i in range(len(k)):
