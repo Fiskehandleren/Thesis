@@ -14,9 +14,11 @@ def get_model(args, dm):
     if args.model_name == "AR":
         model = architectures.AR(input_dim=args.sequence_length, output_dim=1)
     elif args.model_name == "AR_Net":
-        model = architectures.AR_Net(input_dim=dm.sequence_length, output_dim=dm.pred_len, hidden_dim=args.hidden_dim)
+        model = architectures.AR_Net(input_dim=dm.sequence_length, output_dim=dm.pred_len, hidden_dim=args.hidden_dims)
     elif args.model_name == "LSTM": 
-        model = architectures.LSTM(input_dim=dm.input_dimensions, hidden_units = args.hidden_dim)
+        model = architectures.LSTM(input_dim=dm.input_dimensions, hidden_units=args.hidden_dim)
+    elif args.model_name == "GRU":
+        model = architectures.GRU(input_dim=dm.input_dimensions, hidden_units=args.hidden_dim)
     elif args.model_name == "TemporalGCN":
        model = architectures.TemporalGCN(node_features=dm.X_train.shape[2], hidden_dim=args.hidden_dim, time_steps=args.lags, batch_size=args.batch_size)
     elif model is None:
@@ -29,7 +31,7 @@ if __name__ == "__main__":
     parser = pl.Trainer.add_argparse_args(parser)
 
     parser.add_argument("--model_name", type=str, help="The name of the model for spatiotemporal prediction", 
-        choices=("AR", "AR_Net", "LSTM", "TemporalGCN"), required=True)
+        choices=("AR", "AR_Net", "LSTM", "TemporalGCN", "GRU"), required=True)
     
     parser.add_argument("--dataloader", type=str, help="Name of dataloader", choices=("EVChargersDataset", "EVChargersDatasetLSTM"), required = True)
 
