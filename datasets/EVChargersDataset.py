@@ -1,4 +1,4 @@
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, TensorDataset
 import pytorch_lightning as pl
 import pandas as pd
 import os
@@ -11,7 +11,6 @@ ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 class EVChargersDataset(pl.LightningDataModule):
     def __init__(
         self,
-        feat_path: str,
         covariates: bool,
         batch_size: int,
         lags: int,
@@ -22,7 +21,6 @@ class EVChargersDataset(pl.LightningDataModule):
         **kwargs
     ):
         super().__init__()
-        self._feat_path = feat_path
         self.coverariates = covariates
         self.batch_size = batch_size
         self.lags = lags
@@ -36,7 +34,7 @@ class EVChargersDataset(pl.LightningDataModule):
             self.df = dataloader.load_data()
             self._feat = dataloader.create_count_data(self.df, 30, save=True, censored=self.censored)
         else:
-            self._feat = pd.read_csv(os.path.join(feat_path, dataset_name), parse_dates=['Period'])
+            self._feat = pd.read_csv(os.path.join(ROOT_PATH, dataset_name), parse_dates=['Period'])
 
         if cluster is not None:
             self._feat = self._feat[cluster]
@@ -79,10 +77,10 @@ class EVChargersDataset(pl.LightningDataModule):
                 torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test), torch.FloatTensor(self.tau_test)
             )
         else:
-            self.train_dataset = torch.utils.data.TensorDataset(
+            self.train_dataset = TensorDataset(
                 torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train)
             )
-            self.val_dataset = torch.utils.data.TensorDataset(
+            self.val_dataset = TensorDataset(
                 torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test)
             )
 
@@ -103,9 +101,9 @@ class EVChargersDataset(pl.LightningDataModule):
 
 class CensoredSpatialDataset(Dataset):
     def __init__(self, X, y, tau):
-        self.X = torch.tensor(X).float()
-        self.y = torch.tensor(y).float()
-        self.tau = torch.tensor(tau).float()
+        self.X = X
+        self.y = y
+        self.tau = tau
 
     def __len__(self):
         return self.X.shape[0]
