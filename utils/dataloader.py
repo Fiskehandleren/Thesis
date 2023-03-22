@@ -207,9 +207,6 @@ def get_targets_and_features_tgcn(df, lags=30, censored=True, add_month=True, ad
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
-def load_data():
-    path = os.path.join(ROOT_PATH, '../data/ChargePoint Data CY20Q4.csv')
-
 def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_day_of_week=True, add_year=True, train_start='2016-07-01 00:00:00', 
                    train_end = '2017-07-01 00:00:00', test_start='2017-07-01 00:00:30', test_end='2017-08-01 00:00:00', is_censored = False,
                    multiple_stations = False):
