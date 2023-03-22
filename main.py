@@ -62,4 +62,4 @@ if __name__ == "__main__":
     trainer = pl.Trainer.from_argparse_args(args)
     trainer.fit(task, dm)
     trainer.test(task, datamodule=dm)
-    trainer.save_checkpoint("best_model_{args.model_name}_{args.loss}_{}.ckpt")
+    trainer.save_checkpoint("best_model_{args.model_name}_{args.loss}.ckpt")
