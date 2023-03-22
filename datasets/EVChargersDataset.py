@@ -94,7 +94,9 @@ class EVChargersDataset(pl.LightningDataModule):
         parser.add_argument("--lags", type=int, default=30)
         parser.add_argument("--session_minutes", type=int, default=30)
         parser.add_argument("--train_start", type=str, required=True)
+        parser.add_argument("--train_end", type=str, required=True)
         parser.add_argument("--test_start", type=str, required=True)
+        parser.add_argument("--test_end", type=str, required=True)
 
         return parser
 
