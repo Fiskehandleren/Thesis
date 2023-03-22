@@ -55,7 +55,7 @@ if __name__ == "__main__":
             task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
     else:
         if (args.model_name == "AR" or args.model_name == "AR_Net"):
-            assert args.covariates, "AR models cannot include covariates"
+            assert not args.covariates, "AR models cannot include covariates"
         loss_fn = get_loss(args.loss)
         task = AR_Task(model, loss_fn = loss_fn, **vars(args))
 

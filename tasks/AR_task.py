@@ -33,7 +33,7 @@ class AR_Task(pl.LightningModule):
         else:
             x, y = batch
 
-        y_predict = self(x)
+        y_predict = self(x).view(-1)
 
         # Compute loss.
         if self.censored == True:
