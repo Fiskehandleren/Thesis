@@ -207,9 +207,8 @@ def get_targets_and_features_tgcn(df, lags=30, censored=True, add_month=True, ad
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
-def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_day_of_week=True, add_year=True, train_start='2016-07-01 00:00:00', 
-                   train_end = '2017-07-01 00:00:00', test_start='2017-07-01 00:00:30', test_end='2017-08-01 00:00:00', is_censored = False,
-                   multiple_stations = False):
+def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_day_of_week=True, add_year=True, train_start='2016-07-01', 
+                    train_end='2017-07-01', test_end = '2017-08-01', is_censored = False, multiple_stations = False, censorship_level = 1):
     
     ## Function to load data sets, add covariates and split into training and test set. Has option to censor the input data (arg. is_censored) and 
     ## has option to use several stations to predict demand of one station (arg. multiple_stations)
@@ -217,11 +216,10 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
     ## Output: training set, test set, list of explanatory variables (features) and list of targets (target)
     
     ## TODO: add option for validation set
-
     target_var = target
     if (is_censored == True):
         ## ATTEMPT: shift tau variable too
-        path = os.path.join(ROOT_PATH, '../data/charging_session_count_1_to_30_censored_at_2.csv')
+        path = os.path.join(ROOT_PATH, f'../data/charging_session_count_1_to_30_censored_{censorship_level}.csv')
         df = pd.read_csv(path, parse_dates=['Period'])
 
         df_test = df.copy()
@@ -265,7 +263,12 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
             df_test = df_test[features]
 
    
-
+    ## create end points for dataset
+    test_start = train_end + " 00:30:00"
+    print(train_end)
+    print(test_start)
+    #val_start = test_end + "00:00:30"
+    #val_end = val_start + "00:00:30"
     if (type(train_end) != int):
         train_start = df_test[df_test['Period'] == train_start].index.values[0]
         train_end = df_test[df_test['Period'] == train_end].index.values[0]
@@ -284,7 +287,7 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
     df_test[target] = df_test[target_var].shift(-forecast_lead)
     df_test = df_test.iloc[:-forecast_lead]
 
-    
+
     new_cols = []
     if add_month:
         df_test['month'] = df.Period.dt.month
