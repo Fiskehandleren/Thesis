@@ -3,6 +3,7 @@ import torch.optim
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from torch import sqrt
+import numpy as np
 
 from utils.losses import get_loss
 
@@ -29,6 +30,9 @@ class TGCN_task(pl.LightningModule):
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.censored = censored
+
+        self.test_y = np.empty((0, 8))
+        self.test_y_hat = np.empty((0, 8))
 
     def training_step(self, batch, batch_idx):
         if self.censored:
@@ -82,7 +86,6 @@ class TGCN_task(pl.LightningModule):
             loss = self.loss_func(y_hat, y, tau)
         else:
             loss = self.loss_func(y_hat, y)
-        mae = F.l1_loss(y_hat, y)
         mse = F.mse_loss(y_hat, y)
         metrics = {
             "test_loss": loss,
@@ -90,6 +93,9 @@ class TGCN_task(pl.LightningModule):
             "test_mse": mse
         }
         self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
+        self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
+        self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
+
         return loss
 
     def configure_optimizers(self):

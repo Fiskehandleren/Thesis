@@ -70,6 +70,8 @@ def cyclical_encode(data: pd.DataFrame, col: str, max_val: int):
 def create_count_data(df, interval_length=30, save=False, cap_recordings = False, censored = False):
     """ Create counts for number of sessions in each interval. The `Period` defines when the period starts and runs until the next period in the dataframe."""
     df_combined = pd.DataFrame()
+    # Cluster "SHERMAN" has no data before late 2021, so we drop it
+    df = df[df.Cluster != 'SHERMAN']
     for cluster in df['Cluster'].unique():
         # Collect each period that the charging session covers in the 'Period' column. This column will contain a list of datetimes :)
         df.loc[df.Cluster == cluster, 'Period'] = np.array([
@@ -88,8 +90,6 @@ def create_count_data(df, interval_length=30, save=False, cap_recordings = False
     df_pivot = df_combined.pivot_table(index='Period', columns='Cluster', values='Sessions')
     # Cut timeseries off at the latest timepoint of the cluster with the earliest last timepoint
     df_pivot_reduced = df_pivot.loc[:df_combined.groupby('Cluster').agg({'Period': 'max'}).Period.min()].copy()
-    # Cluster "SHERMAN" has no data before late 2021, so we drop it
-    df_pivot_reduced.drop('SHERMAN', axis=1, inplace=True)
     # Fill missing values with 0
     df_pivot_reduced.fillna(0, inplace=True)
 
