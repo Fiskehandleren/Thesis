@@ -8,8 +8,6 @@ def get_loss(loss):
         return nn.PoissonNLLLoss(log_input=False)
     elif loss == "CPNLL":
         return censored_poisson_negative_log_likelihood
-    elif loss == "CPNLL_TGCN":
-        return censored_poisson_negative_log_likelihood_tgcn
     else:
         raise NotImplementedError(f"Loss function \"{loss}\" not implemented")
 
@@ -57,30 +55,11 @@ def censored_poisson_negative_log_likelihood(y_predict, y, C):
     https://findit.dtu.dk/en/catalog/53282c10c18e77205dd0f8ae """
     pois = torch.distributions.poisson.Poisson(y_predict)
 
-    # Pytorch doesn't have the cdf function for the poisson distribution
-    poiss_cdf = 1 - poisson_cdf_non_identical(k=C-1, lamb=y_predict) # Is C-1 correct?
+    # Pytorch doesn't have the cdf function for the poisson distribution so we use the regularized gamma function.
+    # Poisson CDF: Q(floor[k+1], lambda). We are prediction P(X <= C-1) = Q(floor[C+1-1], lambda) = Q(floor[C+1-1], lambda)
+    # https://en.wikipedia.org/wiki/Poisson_distribution 
+    poiss_cdf = 1 - torch.special.gammaincc(torch.floor(C), y_predict)
     poiss_cdf += 1e-8
     d_t = (C > y).int()
 
-    return -torch.sum((d_t * pois.log_prob(y)) + ((1-d_t) * (torch.log(poiss_cdf)))) #Do we sum on the correct axis here?
-
-
-def censored_poisson_negative_log_likelihood_tgcn(y_predict, y, C):
-    """ 
-    Censored Poisson Negative Log Likelihood for the TGCN. Here we do some hacks to calculate
-    the correct loss for each node in the graph.
-
-    y_predict: lambda for Poisson
-    y: observed data
-    C: censoring threshold
-    https://findit.dtu.dk/en/catalog/53282c10c18e77205dd0f8ae """
-    pois = torch.distributions.poisson.Poisson(y_predict)
-
-    # Pytorch doesn't have the cdf function for the poisson distribution
-    poiss_cdf = torch.zeros(y_predict.shape)
-    for i in range(y_predict.shape[1]):
-        poiss_cdf[:,i] = 1 - poisson_cdf_non_identical(k=C[:,i]-1, lamb=y_predict[:,i]) # Is C-1 correct?
-    poiss_cdf += 1e-8
-    d_t = (C > y).int()
-
-    return -torch.sum((d_t * pois.log_prob(y)) + ((1-d_t) * (torch.log(poiss_cdf)))) #Do we sum on the correct axis here?
+    return -torch.sum((d_t * pois.log_prob(y)) + ((1-d_t) * (torch.log(poiss_cdf))))

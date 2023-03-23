@@ -50,8 +50,8 @@ if __name__ == "__main__":
 
     if args.model_name == "TemporalGCN":
         if args.censored:
-            assert args.loss == "CPNLL_TGCN", "Censored data only works with CPNLL_TGCN loss. Rerun with --loss CPNLL_TGCN"
-            task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
+            assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
+        task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
     else:
         if (args.model_name == "AR" or args.model_name == "AR_Net"):
             assert not args.covariates, "AR models cannot include covariates"
