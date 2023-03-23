@@ -65,8 +65,10 @@ if __name__ == "__main__":
     trainer.fit(task, dm)
     trainer.save_checkpoint(f"trained_models/best_model_{args.model_name}_{args.loss}.ckpt")
     trainer.test(task, datamodule=dm)
+
     # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
+    
     if args.model_name == "TemporalGCN":
         df_true = pd.DataFrame(task.test_y, columns=dm.cluster_names)
         df_pred = pd.DataFrame(task.test_y_hat, columns=dm.cluster_names + '_pred')
-        pd.concat([df_true, df_pred], axis=1).to_csv(f"trained_models/predictions_{args.model_name}_{args.loss}.csv")
+        pd.concat([df_true, df_pred], axis=1).to_csv(f"predictions/predictions_{args.model_name}_{args.loss}.csv")
