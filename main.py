@@ -52,15 +52,15 @@ if __name__ == "__main__":
 
     if args.model_name == "TemporalGCN":
         if args.censored:
-            assert args.loss == "CPNLL_TGCN", "Censored data only works with CPNLL_TGCN loss. Rerun with --loss CPNLL_TGCN"
-            task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
+            assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
+        task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
     else:
         if (args.model_name == "AR" or args.model_name == "AR_Net"):
             assert not args.covariates, "AR models cannot include covariates"
         loss_fn = get_loss(args.loss)
-        task = AR_Task(model, loss_fn = loss_fn, **vars(args))
+        task = AR_Task(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
 
     trainer = pl.Trainer.from_argparse_args(args)
     trainer.fit(task, dm)
-    trainer.test(task, datamodule=dm)
     trainer.save_checkpoint(f"trained_models/best_model_{args.model_name}_{args.loss}.ckpt")
+    trainer.test(task, datamodule=dm)

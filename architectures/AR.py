@@ -39,7 +39,7 @@ class AR(nn.Module):
     @staticmethod
     def add_model_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--output_dim", type=int, default=8)
+        #parser.add_argument("--output_dim", type=int, default=8)
         return parser
 
 class AR_Net_multi(nn.Module):
