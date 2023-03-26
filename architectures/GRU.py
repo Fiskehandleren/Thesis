@@ -37,7 +37,7 @@ class GRU(nn.Module):
     def add_model_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--hidden_dim", type=int, default=72)
-        parser.add_argument("--output_dim", type=int, default=1)
+        #parser.add_argument("--output_dim", type=int, default=1)
         return parser
 
         #return out
