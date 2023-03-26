@@ -36,17 +36,21 @@ class EVChargersDataset(pl.LightningDataModule):
         self.test_end = test_end
         self.censored = censored
 
+        self.df = dataloader.load_data()
         # TODO add specific censor strategy
         dataset_name = f'../data/charging_session_count_1_to_30{"_censored_4" if self.censored else ""}.csv'
         if not os.path.exists(os.path.join(ROOT_PATH, dataset_name)):
             print(f'Dataset "{dataset_name}" not found locally. Creating dataset...')
-            self.df = dataloader.load_data()
             self._feat = dataloader.create_count_data(self.df, 30, save=True, censored=self.censored)
         else:
             self._feat = pd.read_csv(os.path.join(ROOT_PATH, dataset_name), parse_dates=['Period'])
 
         if cluster is not None:
             self._feat = self._feat[cluster]
+            self.cluster_names = [cluster]
+        else:
+            self.cluster_names = self.df['Cluster'].unique()
+            self.cluster_names = self.cluster_names[self.cluster_names != 'SHERMAN']
 
         # Load node features
         X, y, tau = dataloader.get_targets_and_features_tgcn(
@@ -73,7 +77,6 @@ class EVChargersDataset(pl.LightningDataModule):
         if self.censored and tau is not None:
             self.tau_train, self.tau_test = tau[train_start_index:test_start_index], tau[test_start_index:]
 
-        self.df = dataloader.load_data()
         G, adj, self.edge_index, self.edge_weight = dataloader.get_graph(self.df)
 
     def train_dataloader(self):
