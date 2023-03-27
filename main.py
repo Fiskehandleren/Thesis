@@ -6,7 +6,7 @@ import pandas as pd
 import architectures
 import datasets
 from utils.losses import get_loss
-from tasks import AR_Task, TGCN_task
+from tasks import AR_Task, TGCN_task, LSTM_task, GRU_task
 
 logger = logging.getLogger('Thesis.Train')
 
@@ -51,15 +51,35 @@ if __name__ == "__main__":
     
     model = get_model(args, dm)
 
+    if args.censored:
+        assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
+    
     if args.model_name == "TemporalGCN":
-        if args.censored:
-            assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
         task = TGCN_task(model, edge_index=dm.edge_index, edge_weight=dm.edge_weight, **vars(args))
+    
+    elif (args.model_name == "AR" or args.model_name == "AR_Net"):
+        assert not args.covariates, "AR models cannot include covariates" 
+
+        loss_fn = get_loss(args.loss)
+        task = AR_Task(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
+    
+    elif(args.model_name == "LSTM"):
+        loss_fn = get_loss(args.loss)
+        task = LSTM_Task(input_dim=args.sequence_length, output_dim = 1, loss_fn = loss_fn, **vars(args))
+
+    elif(args.model_name == "GRU"):
+        loss_fn = get_loss(args.loss)
+        task = GRU_Task(input_dim=args.sequence_length, output_dim = 1, loss_fn = loss_fn, **vars(args))
+    
+    '''
     else:
         if (args.model_name == "AR" or args.model_name == "AR_Net"):
             assert not args.covariates, "AR models cannot include covariates"
         loss_fn = get_loss(args.loss)
-        task = AR_Task(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
+        
+        if (args.model_name == "AR" or args.model_name == "AR_Net"):
+            task = AR_Task(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
+    '''
 
     trainer = pl.Trainer.from_argparse_args(args)
     trainer.fit(task, dm)
