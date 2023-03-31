@@ -1,6 +1,6 @@
+from datasets.EVChargersDatasetSpatial import EVChargersDatasetSpatial
 from datasets.EVChargersDataset import EVChargersDataset
-from datasets.EVChargersDatasetNonSpatial import EVChargersDatasetLSTM
 
-__all__ = ["EVChargersDataset", "EVChargersDatasetLSTM"]
+__all__ = ["EVChargersDatasetSpatial", "EVChargersDataset"]
 
 

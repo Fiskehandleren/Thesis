@@ -1,34 +1,25 @@
-import torch.nn as nn
-import argparse
+from torch import nn
+import pytorch_lightning as pl
+from torch import optim
+import argparse 
 
-
-class AR_Net(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dim):
-        super(AR_Net, self).__init__()
-        self.fc1 = nn.Linear(input_dim, hidden_dim) 
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_dim, output_dim) 
-
-    def forward(self, x):
-        # To handle only one feature in the dataloader for AR models
-        x = x.view(x.shape[0], -1)
-
-        out = self.fc1(x)
-        out = self.relu(out)
-        out = self.fc2(out)
-
-        return out.exp()
-    
-    @staticmethod
-    def add_model_specific_arguments(parent_parser):
-        parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--hidden_dim", type=int, default=256)
-        parser.add_argument("--output_dim", type=int, default=8)
-        return parser
-    
-class AR(nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super(AR, self).__init__()
+class AR(pl.LightningModule):
+    def __init__(
+        self,
+        input_dim,
+        output_dim,
+        loss_fn,
+        censored,
+        learning_rate: float = 1e-3,
+        weight_decay: float = 1.5e-3,
+        feat_max_val: float = 1.0,
+        **kwargs
+    ):
+        super().__init__()
+        self.save_hyperparameters()
+        self.censored = censored
+        self._loss_fn = loss_fn
+        self.feat_max_val = feat_max_val
         self.fc1 = nn.Linear(input_dim, output_dim) 
 
     def forward(self, x):
@@ -36,45 +27,27 @@ class AR(nn.Module):
         out = self.fc1(x)
         return out.exp()
     
-    @staticmethod
-    def add_model_specific_arguments(parent_parser):
-        parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
-        #parser.add_argument("--output_dim", type=int, default=8)
-        return parser
+    def training_step(self, batch, batch_idx):
+        # Run forward calculation
+        if self.censored == True:
+            x, y, tau = batch
+        else:
+            x, y = batch
 
-class AR_Net_multi(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dim):
-        super(AR_Net_multi, self).__init__()
-        self.fc1 = nn.Linear(input_dim, hidden_dim) 
-        self.fc3 = nn.Linear(hidden_dim, hidden_dim*2) 
+        y_predict = self(x).view(-1)
 
-        # Non-linearity
-        self.relu = nn.ReLU()
+        # Compute loss.
+        if self.censored == True:
+            loss = self._loss_fn(y_predict, y, tau)
+        else:
+            loss = self._loss_fn(y_predict, y)
 
-        self.fc2 = nn.Linear(hidden_dim*2, output_dim) 
-        # Linear function (readout)
+        self.log("loss", loss)
+        return loss
 
-    def forward(self, x):
-        out = self.fc1(x)
-        out = self.relu(out)
-        out = self.fc3(out)
-        out = self.fc2(out)
-        return out
-    
-    @staticmethod
-    def add_model_specific_arguments(parent_parser):
-        parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--hidden_dim", type=int, default=256)
-        parser.add_argument("--output_dim", type=int, default=8)
-        return parser
-    
-class AR_multi(nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super(AR_multi, self).__init__()
-        self.fc1 = nn.Linear(input_dim, output_dim) 
-    def forward(self, x):
-        out = self.fc1(x)
-        return out
+    def configure_optimizers(self):
+        optimizer = optim.Adam(self.parameters(), lr=1e-3)
+        return optimizer
     
     @staticmethod
     def add_model_specific_arguments(parent_parser):

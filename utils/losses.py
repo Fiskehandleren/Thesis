@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 def get_loss(loss):
-    if loss == "mse":
+    if loss == "MSE":
         return nn.MSELoss()
     elif loss == "PNLL":
         return nn.PoissonNLLLoss(log_input=False)
