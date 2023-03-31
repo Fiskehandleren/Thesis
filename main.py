@@ -6,7 +6,7 @@ import pandas as pd
 import architectures
 import datasets
 from utils.losses import get_loss
-from tasks import AR_Task, TGCN_task, LSTM_task, GRU_task
+from tasks import AR_Task, TGCN_task, LSTM_Task, GRU_Task
 
 logger = logging.getLogger('Thesis.Train')
 
@@ -17,9 +17,9 @@ def get_model(args, dm):
     elif args.model_name == "AR_Net":
         model = architectures.AR_Net(input_dim=dm.sequence_length, output_dim=dm.pred_len, hidden_dim=args.hidden_dims)
     elif args.model_name == "LSTM": 
-        model = architectures.LSTM(input_dim=dm.input_dimensions, hidden_units=args.hidden_dim)
+        model = architectures.LSTM(input_dim=dm.sequence_length, hidden_units=args.hidden_units)
     elif args.model_name == "GRU":
-        model = architectures.GRU(input_dim=dm.input_dimensions, hidden_units=args.hidden_dim)
+        model = architectures.GRU(input_dim=dm.sequence_length, hidden_units=args.hidden_units)
     elif args.model_name == "TemporalGCN":
        model = architectures.TemporalGCN(node_features=dm.X_train.shape[2], hidden_dim=args.hidden_dim, time_steps=args.lags, batch_size=args.batch_size)
     elif model is None:
@@ -65,11 +65,11 @@ if __name__ == "__main__":
     
     elif(args.model_name == "LSTM"):
         loss_fn = get_loss(args.loss)
-        task = LSTM_Task(input_dim=args.sequence_length, output_dim = 1, loss_fn = loss_fn, **vars(args))
+        task = LSTM_Task(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
 
     elif(args.model_name == "GRU"):
         loss_fn = get_loss(args.loss)
-        task = GRU_Task(input_dim=args.sequence_length, output_dim = 1, loss_fn = loss_fn, **vars(args))
+        task = GRU_Task(input_dim=args.sequence_length, hidden_units=args.hidden_units, loss_fn = loss_fn, **vars(args))
     
     '''
     else:

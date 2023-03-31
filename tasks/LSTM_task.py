@@ -5,7 +5,7 @@ from torch import optim
 import argparse 
 
 
-class LSTM_Task(nn.Module):
+class LSTM_Task(pl.LightningModule):
     def __init__(
         self,
         input_dim,
@@ -21,6 +21,7 @@ class LSTM_Task(nn.Module):
     ):
         super().__init__()
         self.save_hyperparameters()
+        self.hidden_units = hidden_units
         self.num_layers = num_layers
         self.censored = censored
         self._loss_fn = loss_fn
@@ -28,12 +29,12 @@ class LSTM_Task(nn.Module):
         
         self.lstm = nn.LSTM(
             input_size=input_dim,
-            hidden_size=hidden_units,
+            hidden_size=self.hidden_units,
             batch_first=True,
             num_layers=self.num_layers
         )
 
-        self.linear = nn.Linear(in_features=hidden_units, out_features=1)
+        self.linear = nn.Linear(in_features=self.hidden_units, out_features=output_dim)
         
         #self.activation = nn.Sigmoid()
 
@@ -74,7 +75,8 @@ class LSTM_Task(nn.Module):
     @staticmethod
     def add_model_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--hidden_units", type=int, default=72)
-        parser.add_argument("--num_layers", type=int, default=1)
+        #parser.add_argument("--hidden_units", type=int, default=72)
+        #parser.add_argument("--num_layers", type=int, default=1)
+        #parser.add_argument("--output_dim", type=int, default=1)
         return parser
 

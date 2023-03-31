@@ -4,7 +4,7 @@ import pytorch_lightning as pl
 from torch import optim
 import argparse 
 
-class GRU_Task(nn.Module):
+class GRU_Task(pl.LightningModule):
     def __init__(
         self,
         input_dim,
