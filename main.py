@@ -24,7 +24,7 @@ def get_model(args, dm):
     elif args.model_name == "LSTM":
         model = LSTM(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
     elif args.model_name == "GRU":
-        model = GRU(input_dim=args.sequence_length, hidden_units=args.hidden_units, loss_fn = loss_fn, **vars(args))
+        model = GRU(input_dim=args.sequence_length, loss_fn = loss_fn, **vars(args))
     else:
         raise ValueError(f"{args.model_name} not implemented yet!")
     return model

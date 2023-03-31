@@ -7,10 +7,10 @@ class GRU(pl.LightningModule):
     def __init__(
         self,
         input_dim,
-        output_dim, 
+        output_dim,
+        hidden_dim,
         loss_fn,
         censored,
-        hidden_units,
         num_layers: int = 1,
         learning_rate: float = 1e-3,
         weight_decay: float = 1.5e-3,
@@ -28,12 +28,12 @@ class GRU(pl.LightningModule):
         
         self.gru = nn.GRU(
             input_size=input_dim,
-            hidden_size=hidden_units,
+            hidden_size=hidden_dim,
             batch_first=True,
             num_layers=self.num_layers
         )
 
-        self.linear = nn.Linear(in_features=hidden_units, out_features=output_dim)
+        self.linear = nn.Linear(in_features=hidden_dim, out_features=output_dim)
         
 
     def forward(self, x):
@@ -43,7 +43,7 @@ class GRU(pl.LightningModule):
         
         #_, (hn, _) = self.gru(x, (h0, c0))
         x = x.view(batch_size, -1)
-        _, (hn, _) = self.gru(x)
+        _, hn = self.gru(x)
         out = self.linear(hn[-1]).flatten()  # First dim of Hn is num_layers, which is set to 1 above.
 
         return out.exp()
