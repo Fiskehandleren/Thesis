@@ -217,7 +217,7 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
     
     ## TODO: add option for validation set
     target_var = target
-    if (is_censored == True):
+    if is_censored:
         ## ATTEMPT: shift tau variable too
         path = os.path.join(ROOT_PATH, f'../data/charging_session_count_1_to_30_censored_{censorship_level}.csv')
         df = pd.read_csv(path, parse_dates=['Period'])
@@ -226,7 +226,7 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
 
         df_test[target_var + '_TAU'] = df_test[target_var + '_TAU'].shift(-forecast_lead)
 
-        if (multiple_stations == True):
+        if multiple_stations:
             
             ## keep data from other stations, the period and threshold tau for target variable
             features = [v for v in df_test.columns if target + '_TAU' in v]
@@ -256,7 +256,7 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
 
         features = df_test.columns.values
 
-        if (multiple_stations == False):
+        if not multiple_stations:
             ## Keep only data from target station and the period 
             features = [station for station in df_test.columns if target in station]
             features.append('Period')
