@@ -58,8 +58,8 @@ if __name__ == "__main__":
     trainer.save_checkpoint(f"trained_models/best_model_{args.model_name}_{args.loss}.ckpt")
 
     # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
-    
-    if args.model_name == "TGCN":
+
+    if (args.model_name == "TGCN" or args.model_name == "LSTM"):
         # TODO implement test-step for rest of the models
         trainer.test(model, datamodule=dm)
         df_true = pd.DataFrame(model.test_y, columns=dm.cluster_names)

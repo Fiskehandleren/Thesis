@@ -30,6 +30,7 @@ class EVChargersDataset(pl.LightningDataModule):
         self.cluster = cluster
         self.censored = censored
         self.censor_level = censor_level
+        self.cluster_names =  [cluster]
         if self.censored:
             self.tau = cluster + '_TAU' 
         else:

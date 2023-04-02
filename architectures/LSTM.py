@@ -1,6 +1,8 @@
 from torch import nn
+import torch.nn.functional as F
 import pytorch_lightning as pl
 from torch import optim
+import numpy as np
 import argparse 
 
 
@@ -35,7 +37,10 @@ class LSTM(pl.LightningModule):
 
         self.linear = nn.Linear(in_features=self.hidden_dim, out_features=output_dim)
         
-        #self.activation = nn.Sigmoid()
+        
+        # To save predictions and their true values for visualizations
+        self.test_y = np.empty(0)
+        self.test_y_hat = np.empty(0)
 
     def forward(self, x):
         batch_size = x.shape[0]
@@ -69,10 +74,67 @@ class LSTM(pl.LightningModule):
             loss = self._loss_fn(y_predict, y, tau)
         else:
             loss = self._loss_fn(y_predict, y)
-
+        
+        #mse = F.mse_loss(y_predict, y)
+        mse = 1
+        metrics = {
+            "test_loss": loss
+        }
         self.log("loss", loss)
+        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        if self.censored:
+            x, y, tau = batch
+        else:
+            x, y = batch
+
+        y_predict = self(x).view(-1)
+
+        # Compute loss.
+        if self.censored:
+            loss = self._loss_fn(y_predict, y, tau)
+        else:
+            loss = self._loss_fn(y_predict, y)
+        
+        mse = F.mse_loss(y_predict, y)
+        metrics = {
+            "test_loss": loss,
+            "test_rmse": np.sqrt(mse),
+            "test_mse": mse
+        }
+        self.log("loss", loss)
+        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
+        return loss
+    
+
+    def test_step(self, batch, batch_idx):
+        if self.censored:
+            x, y, tau = batch
+        else:
+            x, y = batch
+
+        y_predict = self(x).view(-1)
+
+        # Compute loss.
+        if self.censored:
+            loss = self._loss_fn(y_predict, y, tau)
+        else:
+            loss = self._loss_fn(y_predict, y)
+        #mse = F.mse_loss(y_predict, y)
+        metrics = {
+            "test_loss": loss
+        }
+        self.log("loss", loss)
+        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
+        
+        self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
+        self.test_y_hat = np.concatenate((self.test_y_hat, y_predict.cpu().detach().numpy()))
+
         return loss
 
+    
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=1e-3)
         return optimizer
