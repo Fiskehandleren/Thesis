@@ -11,6 +11,7 @@ class ARNet(pl.LightningModule):
         self,
         input_dim,
         output_dim,
+        hidden_dim,
         loss_fn,
         censored,
         learning_rate: float = 1e-3,
@@ -23,8 +24,9 @@ class ARNet(pl.LightningModule):
         self.censored = censored
         self._loss_fn = loss_fn
         self.feat_max_val = feat_max_val
-        self.fc1 = nn.Linear(input_dim, output_dim) 
-        self.activation = nn.Sigmoid()
+        self.fc1 = nn.Linear(input_dim, hidden_dim) 
+        self.activation = nn.LeakyReLU()
+        self.fc2 = nn.linear(hidden_dim, output_dim)
 
         # To save predictions and their true values for visualizations
         self.test_y = np.empty(0)
@@ -34,6 +36,8 @@ class ARNet(pl.LightningModule):
     def forward(self, x):
         x = x.view(x.shape[0], -1)
         out = self.fc1(x)
+        out = self.activation(out)
+
         return out.exp()
     
     def training_step(self, batch, batch_idx):
