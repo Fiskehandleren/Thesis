@@ -26,7 +26,7 @@ class ARNet(pl.LightningModule):
         self.feat_max_val = feat_max_val
         self.fc1 = nn.Linear(input_dim, hidden_dim) 
         self.activation = nn.LeakyReLU()
-        self.fc2 = nn.linear(hidden_dim, output_dim)
+        self.fc2 = nn.Linear(hidden_dim, output_dim)
 
         # To save predictions and their true values for visualizations
         self.test_y = np.empty(0)
@@ -37,6 +37,7 @@ class ARNet(pl.LightningModule):
         x = x.view(x.shape[0], -1)
         out = self.fc1(x)
         out = self.activation(out)
+        out = self.fc2(out)
 
         return out.exp()
     
@@ -124,5 +125,6 @@ class ARNet(pl.LightningModule):
     @staticmethod
     def add_model_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument("--hidden_dim", type=int, default=72)
         #parser.add_argument("--output_dim", type=int, default=8)
         return parser
