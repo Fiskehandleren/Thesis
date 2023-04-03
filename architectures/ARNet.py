@@ -1,6 +1,9 @@
 from torch import nn
+import torch.nn.functional as F
 import pytorch_lightning as pl
 from torch import optim
+from torch import sqrt
+import numpy as np
 import argparse 
 
 class ARNet(pl.LightningModule):
@@ -23,6 +26,11 @@ class ARNet(pl.LightningModule):
         self.fc1 = nn.Linear(input_dim, output_dim) 
         self.activation = nn.Sigmoid()
 
+        # To save predictions and their true values for visualizations
+        self.test_y = np.empty(0)
+        self.test_y_hat = np.empty(0)
+
+
     def forward(self, x):
         x = x.view(x.shape[0], -1)
         out = self.fc1(x)
@@ -42,9 +50,68 @@ class ARNet(pl.LightningModule):
             loss = self._loss_fn(y_predict, y, tau)
         else:
             loss = self._loss_fn(y_predict, y)
+        
+        mse = F.mse_loss(y_predict, y)
+        metrics = {
+            "train_loss": loss,
+            "train_mse": mse,
+            "train_rmse": sqrt(mse)
+        }
 
-        self.log("loss", loss)
+        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
         return loss
+   
+    def validation_step(self, batch, batch_idx):
+        if self.censored:
+            x, y, tau = batch
+        else:
+            x, y = batch
+
+        y_predict = self(x).view(-1)
+
+        # Compute loss.
+        if self.censored:
+            loss = self._loss_fn(y_predict, y, tau)
+        else:
+            loss = self._loss_fn(y_predict, y)
+        
+        mse = F.mse_loss(y_predict, y)
+        metrics = {
+            "val_loss": loss,
+            "val_rmse": sqrt(mse),
+            "val_mse": mse
+        }
+        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
+        return loss
+    
+
+    def test_step(self, batch, batch_idx):
+        if self.censored:
+            x, y, tau = batch
+        else:
+            x, y = batch
+
+        y_predict = self(x).view(-1)
+
+        # Compute loss.
+        if self.censored:
+            loss = self._loss_fn(y_predict, y, tau)
+        else:
+            loss = self._loss_fn(y_predict, y)
+        mse = F.mse_loss(y_predict, y)
+        metrics = {
+            "test_loss": loss,
+            "test_mse": mse,
+            "test_rmse": sqrt(mse)
+        }
+
+        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
+        
+        self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
+        self.test_y_hat = np.concatenate((self.test_y_hat, y_predict.cpu().detach().numpy()))
+
+        return loss
+
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=1e-3)
@@ -53,5 +120,5 @@ class ARNet(pl.LightningModule):
     @staticmethod
     def add_model_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--output_dim", type=int, default=8)
+        #parser.add_argument("--output_dim", type=int, default=8)
         return parser

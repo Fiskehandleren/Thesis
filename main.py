@@ -1,12 +1,13 @@
 import logging
 import argparse
 import pytorch_lightning as pl
+import numpy as np
 import pandas as pd
 
 import datasets
 import architectures
 from utils.losses import get_loss
-from architectures import AR, TGCN, LSTM, GRU
+from architectures import AR, TGCN, LSTM, GRU, ARNet
 
 logger = logging.getLogger('Thesis.Train')
 
@@ -18,9 +19,12 @@ def get_model(args, dm):
         if args.censored:
             assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
         model = TGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[2], loss_fn = loss_fn, **vars(args))
-    elif args.model_name == "AR" or args.model_name == "AR_Net":
-        assert not args.covariates, "AR models cannot include covariates" 
+    elif args.model_name == "AR":
+        assert not args.covariates, "AR models cannot include covariates"
         model = AR(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
+    elif args.model_name == "ARNet":
+        assert not args.covariates, "AR models cannot include covariates"
+        model = ARNet(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
     elif args.model_name == "LSTM":
         model = LSTM(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
     elif args.model_name == "GRU":
@@ -34,7 +38,7 @@ if __name__ == "__main__":
     parser = pl.Trainer.add_argparse_args(parser)
 
     parser.add_argument("--model_name", type=str, help="The name of the model", 
-        choices=("AR", "AR_Net", "LSTM", "TGCN", "GRU"), required=True)
+        choices=("AR", "ARNet", "LSTM", "TGCN", "GRU"), required=True)
     
     parser.add_argument("--dataloader", type=str, help="Name of dataloader", choices=("EVChargersDatasetSpatial", "EVChargersDataset"), required = True)
 
@@ -59,9 +63,9 @@ if __name__ == "__main__":
 
     # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
 
-    if (args.model_name == "TGCN" or args.model_name == "LSTM"):
-        # TODO implement test-step for rest of the models
-        trainer.test(model, datamodule=dm)
-        df_true = pd.DataFrame(model.test_y, columns=dm.cluster_names)
-        df_pred = pd.DataFrame(model.test_y_hat, columns=dm.cluster_names + '_pred')
-        pd.concat([df_true, df_pred], axis=1).to_csv(f"predictions/predictions_{args.model_name}_{args.loss}.csv")
+    #if (args.model_name == "TGCN" or args.model_name == "LSTM" or args.model_name == "GRU" or args.model_name == "AR" or args.model_name == "ARNet"):
+    # TODO implement test-step for rest of the models
+    trainer.test(model, datamodule=dm)
+    df_true = pd.DataFrame(model.test_y, columns=dm.cluster_names)
+    df_pred = pd.DataFrame(model.test_y_hat, columns=np.char.add(dm.cluster_names, '_pred'))
+    pd.concat([df_true, df_pred], axis=1).to_csv(f"predictions/predictions_{args.model_name}_{args.loss}.csv")
