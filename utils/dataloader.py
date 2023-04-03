@@ -137,7 +137,12 @@ def get_graph(df, adjecency_threshold_km=3):
     return G, adj, edge_index, edge_weight.float()   
 
 
-def get_targets_and_features_tgcn(df, lags=30, censored=True, add_month=True, add_hour=True, add_day_of_week=True, add_year=True):
+def get_targets_and_features_tgcn(
+        df, sequence_length=30, forecast_lead=1, 
+        censored=True, add_month=True, add_hour=True, add_day_of_week=True, add_year=True):
+    # By default we already shift the target by 1 timestep
+    forecast_lead += 1
+
     df_test = df.copy()
     features, new_cols = [], []
     if add_month:
@@ -153,47 +158,45 @@ def get_targets_and_features_tgcn(df, lags=30, censored=True, add_month=True, ad
         df_test, new_cols = cyclical_encode(df_test, 'hour', 24)
         features = features + new_cols
     if add_year:
+        # We subtract the minimum year to make the year start at 0
         df_test['year'] = df.Period.dt.year - df.Period.dt.year.min()
         features.append('year')
     
-    # If the dataset is censored, we want to remove the threshhold of each node from the features 
-    if censored:
-        features = features + list(df.filter(like='_TAU').columns)
-
-    node_names = df_test.columns.difference(['Period'] + features)
+    node_names = df_test.columns.difference(['Period'] + features + list(df.filter(like='_TAU').columns))
     num_nodes = len(node_names)
 
-    # Get initial lagged features by taking the first `lags` observations and treat
-    # the `lags`+1 observation as the target
+    # Get initial lagged features by taking the first `sequence_length` observations and treat
+    # the `sequence_length`+1 observation as the target
     sessions_array = np.array(df_test[node_names])
 
     lag_feats = np.array([
-        sessions_array[i : i + lags, :].T
-        for i in range(sessions_array.shape[0] - lags)
+        sessions_array[i : i + sequence_length, :].T
+        for i in range(sessions_array.shape[0] - sequence_length)
     ])
     # Reshape to fit being concatenated with the datetime features
-    lag_feats = lag_feats.reshape(-1, num_nodes, 1, lags)
+    lag_feats = lag_feats.reshape(-1, num_nodes, 1, sequence_length)
 
+    sessions_array_shifted = np.array(df_test[node_names].shift(-forecast_lead)) # -1 because the next line shifts by 1 by default
     y = np.array([
-        sessions_array[i + lags, :].T
-        for i in range(sessions_array.shape[0] - lags)
+        sessions_array_shifted[i + sequence_length, :].T
+        for i in range(sessions_array_shifted.shape[0] - sequence_length)
     ])
 
     time_features = np.array(df_test[features], dtype=int)
 
     times = np.array([
-        [time_features[i : i + lags, :].T]
-        for i in range(time_features.shape[0] - lags)
+        [time_features[i : i + sequence_length, :].T]
+        for i in range(time_features.shape[0] - sequence_length)
     ])
     # Repeat the time features 8 times because we have 8 nodes, and the 
     # period is the same across all nodes
     times = times.repeat(num_nodes, axis=1)
 
     if censored:
-        _tau = np.array(df_test.filter(like='_TAU'), dtype=int)
+        _tau = np.array(df_test.filter(like='_TAU').shift(-forecast_lead), dtype=int)
         tau = np.array([
-            _tau[i + lags, :].T
-            for i in range(_tau.shape[0] - lags)
+            _tau[i + sequence_length, :].T
+            for i in range(_tau.shape[0] - sequence_length)
         ])
     else:
         tau = None

@@ -4,6 +4,7 @@ import pandas as pd
 import os
 import utils.dataloader as dataloader
 import argparse
+import numpy as np
 import torch
 
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -14,6 +15,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         covariates: bool,
         batch_size: int,
         sequence_length: int,
+        forecast_lead: int,
         cluster: str,
         train_start: str,
         train_end: str,
@@ -26,6 +28,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.coverariates = covariates
         self.batch_size = batch_size
         self.sequence_length = sequence_length
+        self.forecast_lead = forecast_lead
         self.train_start = train_start
         self.train_end = train_end
         self.test_start = train_end + " 00:30:00"
@@ -45,7 +48,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
 
         if cluster is not None:
             self._feat = self._feat[cluster]
-            self.cluster_names = [cluster]
+            self.cluster_names = np.array([cluster])
         else:
             self.cluster_names = self.df['Cluster'].unique()
             self.cluster_names = self.cluster_names[self.cluster_names != 'SHERMAN']
@@ -53,7 +56,8 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         # Load node features
         X, y, tau = dataloader.get_targets_and_features_tgcn(
             self._feat,
-            lags=self.sequence_length, # TODO not sure if this is the same way as nonspatial is done? 
+            sequence_length=self.sequence_length,
+            forecast_lead=self.forecast_lead,
             censored=self.censored,
             add_month=self.coverariates,
             add_day_of_week=self.coverariates,
@@ -110,6 +114,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         parser.add_argument("--censored", default=False, action='store_true')
         parser.add_argument("--censor_level", default = 1, help = "Choose censorship level")
         parser.add_argument("--sequence_length",  type=int, default = 72)
+        parser.add_argument("--forecast_lead", type=int, default = 1)
         parser.add_argument("--train_start", type=str, required=True)
         parser.add_argument("--train_end", type=str, required=True)
         parser.add_argument("--test_end", type=str, required=True)
