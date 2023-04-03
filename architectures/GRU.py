@@ -5,6 +5,7 @@ from torch import optim
 from torch import sqrt
 import numpy as np
 import argparse 
+import torch
 
 class GRU(pl.LightningModule):
     def __init__(
@@ -28,7 +29,8 @@ class GRU(pl.LightningModule):
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.feat_max_val = feat_max_val
-        
+        self.hidden_dim = hidden_dim
+
         self.gru = nn.GRU(
             input_size=input_dim,
             hidden_size=hidden_dim,
@@ -44,11 +46,10 @@ class GRU(pl.LightningModule):
 
     def forward(self, x):
         batch_size = x.shape[0]
-        # h0 = torch.zeros(self.num_layers, batch_size, self.hidden_units).requires_grad_()
-        # c0 = torch.zeros(self.num_layers, batch_size, self.hidden_units).requires_grad_()
+        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).requires_grad_()
+        c0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).requires_grad_()
         
         #_, (hn, _) = self.gru(x, (h0, c0))
-        x = x.view(batch_size, -1)
         _, hn = self.gru(x)
         out = self.linear(hn[-1]).flatten()  # First dim of Hn is num_layers, which is set to 1 above.
 

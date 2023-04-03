@@ -26,9 +26,9 @@ def get_model(args, dm):
         assert not args.covariates, "AR models cannot include covariates"
         model = ARNet(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
     elif args.model_name == "LSTM":
-        model = LSTM(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
+        model = LSTM(input_dim=dm.input_dimensions, output_dim=1, loss_fn = loss_fn, **vars(args))
     elif args.model_name == "GRU":
-        model = GRU(input_dim=args.sequence_length, loss_fn = loss_fn, **vars(args))
+        model = GRU(input_dim=dm.input_dimensions, loss_fn = loss_fn, **vars(args))
     else:
         raise ValueError(f"{args.model_name} not implemented yet!")
     return model
@@ -43,6 +43,20 @@ if __name__ == "__main__":
     parser.add_argument("--dataloader", type=str, help="Name of dataloader", choices=("EVChargersDatasetSpatial", "EVChargersDataset"), required = True)
 
     parser.add_argument("--loss", type=str, help="Loss function to use", default="PNLL", choices=("MSE", "PNLL", "CPNLL", "CPNLL_TGCN"))
+
+    # Common dataset arguments
+    parser.add_argument("--cluster", type=str, help="Which cluster to fit model to", default = 'WEBSTER')
+    parser.add_argument("--covariates", help="Add covariates to the dataset", default=False, action='store_true')
+    parser.add_argument("--censored", action='store_true', default = False, help= "Censor data at cap. tau")
+    parser.add_argument("--censor_level", default = 1, help = "Choose censorship level")
+    parser.add_argument("--forecast_lead", type=int, default=24, help="How many time steps ahead to predict")
+    parser.add_argument("--sequence_length",  type=int, default = 72)
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--train_start", type=str, required=True)
+    parser.add_argument("--train_end", type=str, required=True)
+    parser.add_argument("--test_end", type=str, required=True)
+
+
 
     temp_args, _ = parser.parse_known_args()
     #parser = getattr(architectures, temp_args.model_name).add_model_specific_arguments(parser)

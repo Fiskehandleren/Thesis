@@ -1,0 +1,77 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "TemporalGCN",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--model_name", "TGCN",
+                "--train_start", "2019-01-01",
+                "--train_end", "2019-04-01",
+                "--test_end", "2020-05-30",
+                "--val_end", "2019-04-30",
+                "--covariates",
+                "--max_epochs", "1",
+                "--censored",
+                "--hidden_dim", "32",
+                "--dataloader", "EVChargersDatasetSpatial",
+                "--loss", "CPNLL"
+            ]
+        },
+        {
+            "name": "GRU",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--model_name", "GRU",
+                "--train_start", "2019-01-01",
+                "--train_end", "2019-04-01",
+                "--test_end", "2019-06-02",
+                "--max_epochs", "1",
+                "--censored",
+                "--forecast_lead", "24",
+                "--sequence_length", "72",
+                "--cluster", "WEBSTER",
+                "--hidden_dim", "32",
+                "--num_layers", "2",
+                "--dataloader", "EVChargersDataset",
+                "--loss", "CPNLL",
+                "--censor_level", "2",
+            ]
+        },
+        {
+            "name": "LSTM",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--model_name", "LSTM",
+                "--dataloader", "EVChargersDataset",
+                "--train_start", "2019-01-01",
+                "--train_end", "2019-05-01",
+                "--test_end", "2019-06-02",
+                "--max_epochs", "5",
+                "--censored",
+                "--forecast_lead", "24",
+                "--sequence_length", "72",
+                "--cluster", "WEBSTER",
+                "--hidden_dim", "32",
+                "--num_layers", "1",
+                "--loss", "CPNLL",
+                "--censor_level", "2",
+            ]
+        }
+    ]
+}

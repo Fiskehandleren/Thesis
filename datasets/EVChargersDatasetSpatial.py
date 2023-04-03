@@ -108,16 +108,6 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
     @staticmethod
     def add_data_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--batch_size", type=int, default=32)
-        parser.add_argument("--covariates", help="Add covariates to the dataset", default=False, action='store_true')
-        parser.add_argument("--cluster", type=str, help="Which cluster to fit an AR model to")
-        parser.add_argument("--censored", default=False, action='store_true')
-        parser.add_argument("--censor_level", default = 1, help = "Choose censorship level")
-        parser.add_argument("--sequence_length",  type=int, default = 72)
-        parser.add_argument("--forecast_lead", type=int, default = 1)
-        parser.add_argument("--train_start", type=str, required=True)
-        parser.add_argument("--train_end", type=str, required=True)
-        parser.add_argument("--test_end", type=str, required=True)
         parser.add_argument("--val_end", type=str, required=True)
 
         return parser
