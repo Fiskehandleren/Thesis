@@ -56,7 +56,7 @@ class EVChargersDataset(pl.LightningDataModule):
 
     def test_dataloader(self):
         test_dataset = dataloader.SequenceDataset(self.df_test, self.target, self.features, self.tau, self.sequence_length)
-        return DataLoader(test_dataset, batch_size=self.batch_size, shuffle=True, num_workers = 8)
+        return DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers = 8)
     
 
     '''

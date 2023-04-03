@@ -5,6 +5,7 @@ from torch import optim
 from torch import sqrt
 import numpy as np
 import argparse 
+import torch
 
 
 class LSTM(pl.LightningModule):
@@ -48,15 +49,14 @@ class LSTM(pl.LightningModule):
         # If no h0 and c0 is given to the model, they're initialized to zeros
         # These two caused issues so outcommented. Why am I writing in English?
 
-        # h0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).requires_grad_()
-        # c0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).requires_grad_()
+        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).requires_grad_()
+        c0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).requires_grad_()
         
-        x = x.view(batch_size, -1)
         _, (hn, _) = self.lstm(x)
 
         #:math:`(\text{num\_layers}, N, H_{out})` containing the
         # final hidden state for each element in the sequence.
-        out = self.linear(hn[-1]).flatten()  # First dim of Hn is num_layers, which is set to 1 above.
+        out = self.linear(hn[0]).flatten()  # First dim of Hn is num_layers, which is set to 1 above.
         # Should we always grab the last layer? [-1] indicese last eleement
 
         return out.exp()
