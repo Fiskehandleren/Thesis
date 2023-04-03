@@ -45,7 +45,7 @@ if __name__ == "__main__":
     parser.add_argument("--loss", type=str, help="Loss function to use", default="PNLL", choices=("MSE", "PNLL", "CPNLL", "CPNLL_TGCN"))
 
     # Common dataset arguments
-    parser.add_argument("--cluster", type=str, help="Which cluster to fit model to", default = 'WEBSTER')
+    parser.add_argument("--cluster", type=str, help="Which cluster to fit model to")
     parser.add_argument("--covariates", help="Add covariates to the dataset", default=False, action='store_true')
     parser.add_argument("--censored", action='store_true', default = False, help= "Censor data at cap. tau")
     parser.add_argument("--censor_level", default = 1, help = "Choose censorship level")
