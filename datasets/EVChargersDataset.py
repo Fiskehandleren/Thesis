@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
+import numpy as np
 import utils.dataloader as dataloader
 import argparse
 
@@ -30,7 +31,7 @@ class EVChargersDataset(pl.LightningDataModule):
         self.cluster = cluster
         self.censored = censored
         self.censor_level = censor_level
-        self.cluster_names =  [cluster]
+        self.cluster_names =  np.array([cluster])
         if self.censored:
             self.tau = cluster + '_TAU' 
         else:
