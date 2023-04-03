@@ -72,16 +72,6 @@ class EVChargersDataset(pl.LightningDataModule):
     @staticmethod
     def add_data_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--batch_size", type=int, default=4)
-        parser.add_argument("--covariates", help="Add covariates to the dataset", type=bool, default=False)
-        parser.add_argument("--cluster", type=str, help="Which cluster to fit model to", default = 'WEBSTER')
-        parser.add_argument("--forecast_lead", type=int, default=24)
-        parser.add_argument("--censored", action='store_true', default = False, help= "Censor data at cap. tau")
-        parser.add_argument("--censor_level", default = 1, help = "Choose censorship level")
-        parser.add_argument("--train_start", type=str, required=True)
-        parser.add_argument("--train_end", type=str, required=True)
-        parser.add_argument("--test_end", type=str, required=True)
-        parser.add_argument("--sequence_length",  type=int, default = 72)
         parser.add_argument("--multiple_stations", action='store_true', default = False, help="Include data from all stations for prediction")
 
         return parser
