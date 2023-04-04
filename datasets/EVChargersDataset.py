@@ -51,6 +51,8 @@ class EVChargersDataset(pl.LightningDataModule):
 
         self.input_dimensions = len(self.features)
 
+        self.y_dates = self.df_test.Period.to_numpy()
+
     def train_dataloader(self):
         train_dataset = dataloader.SequenceDataset(self.df_train, self.target, self.features, 
                                                    self.tau, self.true_target, self.sequence_length)
@@ -61,6 +63,7 @@ class EVChargersDataset(pl.LightningDataModule):
                                                   self.tau, self.true_target, self.sequence_length)
         return DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers = 8)
     
+
 
     '''
     def setup(self, stage=None):

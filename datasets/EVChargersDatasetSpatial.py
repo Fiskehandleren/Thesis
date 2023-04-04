@@ -54,7 +54,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             self.cluster_names = self.cluster_names[self.cluster_names != 'SHERMAN']
 
         # Load node features
-        X, y, tau = dataloader.get_targets_and_features_tgcn(
+        X, y, tau, y_true = dataloader.get_targets_and_features_tgcn(
             self._feat,
             sequence_length=self.sequence_length,
             forecast_lead=self.forecast_lead,
@@ -79,6 +79,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.y_dates = self._feat[test_start_index : test_end_index].Period.to_numpy()
         if self.censored and tau is not None:
             self.tau_train, self.tau_test = tau[train_start_index:train_end_index], tau[train_end_index:]
+            self.y_train_true, self.y_test_true = y_true[train_start_index:train_end_index], tau[train_end_index:]
 
         G, adj, self.edge_index, self.edge_weight = dataloader.get_graph(self.df)
 
@@ -94,10 +95,10 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
     def setup(self, stage=None):
         if self.censored:
             self.train_dataset = CensoredSpatialDataset(
-                torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train), torch.FloatTensor(self.tau_train)
+                torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train), torch.FloatTensor(self.tau_train), torch.FloatTensor(self.y_train_true)
             )
             self.val_dataset = CensoredSpatialDataset(
-                torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test), torch.FloatTensor(self.tau_test)
+                torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test), torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true)
             )
         else:
             self.train_dataset = TensorDataset(

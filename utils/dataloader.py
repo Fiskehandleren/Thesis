@@ -198,14 +198,21 @@ def get_targets_and_features_tgcn(
             _tau[i + sequence_length + forecast_lead, :].T
             for i in range(_tau.shape[0] - sequence_length - forecast_lead)
         ])
+        _y_true = np.array(df_test.filter(like='_TRUE').shift(-forecast_lead), dtype=int)
+        y_true = np.array([
+            _y_true[i + sequence_length + forecast_lead, :].T
+            for i in range(_y_true.shape[0] - sequence_length - forecast_lead)
+        ])
+
     else:
         tau = None
+        y_true = None
     
     # The `feat` matrix will go from (time_length, nodes, lags) to (time_length, nodes, number of features, lags)
     # We repeat the date-specific features 8 times because we have 8 nodes. 
     X = np.concatenate((lag_feats, times), axis=2)
 
-    return X, y, tau
+    return X, y, tau, y_true
 
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
