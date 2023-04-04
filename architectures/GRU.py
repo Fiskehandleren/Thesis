@@ -6,6 +6,8 @@ from torch import sqrt
 import numpy as np
 import argparse 
 import torch
+import wandb
+
 
 class GRU(pl.LightningModule):
     def __init__(
@@ -78,8 +80,8 @@ class GRU(pl.LightningModule):
             "train_rmse": sqrt(mse)
         }
 
-        #self.log("loss", loss)
-        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
+        self.log("train/loss", loss)
+        #self.log_dict(metrics, prog_bar=True)
         return loss
     
     def validation_step(self, batch, batch_idx):

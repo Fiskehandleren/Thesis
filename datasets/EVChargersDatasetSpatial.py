@@ -22,6 +22,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         test_end: str,
         val_end: str,
         censored: bool,
+        censor_level: int,
         **kwargs
     ):
         super().__init__()
@@ -38,8 +39,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.censored = censored
 
         self.df = dataloader.load_data()
-        # TODO add specific censor strategy
-        dataset_name = f'../data/charging_session_count_1_to_30{"_censored_4" if self.censored else ""}.csv'
+        dataset_name = f'../data/charging_session_count_1_to_30{f"_censored_{censor_level}" if self.censored else ""}.csv'
         if not os.path.exists(os.path.join(ROOT_PATH, dataset_name)):
             print(f'Dataset "{dataset_name}" not found locally. Creating dataset...')
             self._feat = dataloader.create_count_data(self.df, 30, save=True, censored=self.censored)
@@ -47,10 +47,10 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             self._feat = pd.read_csv(os.path.join(ROOT_PATH, dataset_name), parse_dates=['Period'])
 
         if cluster is not None:
-            self._feat = self._feat[cluster]
+            self._feat = self._feat[cluster].to_frame()
             self.cluster_names = np.array([cluster])
         else:
-            self.cluster_names = self.df['Cluster'].unique()
+            self.cluster_names = self.df['Cluster'].unique().astype(str)
             self.cluster_names = self.cluster_names[self.cluster_names != 'SHERMAN']
 
         # Load node features
@@ -66,6 +66,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
 
         train_start_index = self._feat[(self._feat.Period >= self.train_start)].index[0]
         train_end_index = self._feat[(self._feat.Period >= self.train_end)].index[0]
+        test_start_index = self._feat[self._feat.Period >= self.test_start].index[0]
         test_end_index = self._feat[self._feat.Period >= self.test_end].index[0]
         val_start_index = self._feat[(self._feat.Period >= self.val_start)].index[0]
         val_end_index = self._feat[(self._feat.Period >= self.val_end)].index[0]
@@ -73,8 +74,9 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         # Grab training data from the start of the dataset to the start of the test set
         self.X_train, self.y_train = X[train_start_index : train_end_index], y[train_start_index : train_end_index]
         self.X_val, self.y_val = X[val_start_index : val_end_index], y[val_start_index : val_end_index]
-        self.X_test, self.y_test = X[train_end_index : test_end_index], y[train_end_index : test_end_index]
+        self.X_test, self.y_test = X[test_start_index : test_end_index], y[test_start_index : test_end_index]
 
+        self.y_dates = self._feat[test_start_index : test_end_index].Period.to_numpy()
         if self.censored and tau is not None:
             self.tau_train, self.tau_test = tau[train_start_index:train_end_index], tau[train_end_index:]
 

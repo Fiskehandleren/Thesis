@@ -2,12 +2,13 @@ import argparse
 import torch.optim
 import torch.nn.functional as F
 from torch_geometric_temporal.nn.recurrent import TGCN2
-import pytorch_lightning as pl
+from pytorch_lightning import LightningModule
 from torch import sqrt
 import numpy as np
+import wandb
 
 
-class TGCN(pl.LightningModule):
+class TGCN(LightningModule):
     def __init__(
         self,
         loss_fn,
@@ -23,7 +24,6 @@ class TGCN(pl.LightningModule):
         **kwargs
     ):
         super().__init__()
-        self.save_hyperparameters(ignore=["model", "loss", "edge_index", "edge_weight"])
         self.loss_fn = loss_fn
         self.edge_index = edge_index.to(self.device)
         self.edge_weight = edge_weight.to(self.device)
@@ -44,6 +44,8 @@ class TGCN(pl.LightningModule):
         self.test_y = np.empty((0, 8))
         self.test_y_hat = np.empty((0, 8))
 
+        self.save_hyperparameters(ignore=["model", "loss_fn", "edge_index", "edge_weight"])
+
     def forward(self, x, edge_index, edge_weight):
         h = None # Maybe initialize randomly?
         # Go over each 
@@ -55,69 +57,47 @@ class TGCN(pl.LightningModule):
         y = self.linear(h)
         return y.exp(), h
     
-    def training_step(self, batch, batch_idx):
+    def _get_preds_loss_metrics(self, batch, stage):
         if self.censored:
             x, y, tau = batch
         else:
             x, y = batch
         y_hat, _ = self(x, self.edge_index, self.edge_weight)
-        y_hat = y_hat.view(-1, 8)
+        y_hat = y_hat.view(-1, x.shape[1])
         
         if self.censored:
             loss = self.loss_fn(y_hat, y, tau)
         else:
             loss = self.loss_fn(y_hat, y)
         mse = F.mse_loss(y_hat, y)
-        metrics = {
-            "train_loss": loss,
-            "train_rmse": sqrt(mse),
-            "train_mse": mse
-        }
-        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
-        return loss
+
+        return {
+            f"{stage}_loss": loss,
+            f"{stage}_rmse": sqrt(mse),
+            f"{stage}_mse": mse,
+        }, y, y_hat
+
+    def training_step(self, batch, batch_idx):
+        loss_metrics, _, _= self._get_preds_loss_metrics(batch, "train")
+        #self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        return loss_metrics["train_loss"]
     
     def validation_step(self, batch, batch_idx):
-        if self.censored:
-            x, y, tau = batch
-        else:
-            x, y = batch
-        y_hat, _ = self(x, self.edge_index, self.edge_weight)
-        y_hat = y_hat.view(-1, 8)
-        if self.censored:
-            loss = self.loss_fn(y_hat, y, tau)
-        else:
-            loss = self.loss_fn(y_hat, y)
-        mse = F.mse_loss(y_hat, y)
-        metrics = {
-            "val_loss": loss,
-            "val_rmse": sqrt(mse),
-            "val_mse": mse
-        }
-        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
-        return loss
+        loss_metrics, _, _ = self._get_preds_loss_metrics(batch, "val")
+        self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        return loss_metrics["val_loss"]
     
     def test_step(self, batch, batch_idx):
-        if self.censored:
-            x, y, tau = batch
-        else:
-            x, y = batch
-        y_hat, _ = self(x, self.edge_index, self.edge_weight)
-        y_hat = y_hat.view(-1, 8)
-        if self.censored:
-            loss = self.loss_fn(y_hat, y, tau)
-        else:
-            loss = self.loss_fn(y_hat, y)
-        mse = F.mse_loss(y_hat, y)
-        metrics = {
-            "test_loss": loss,
-            "test_rmse": sqrt(mse),
-            "test_mse": mse
-        }
-        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
+        loss_metrics, y, y_hat = self._get_preds_loss_metrics(batch, "test")
+        self.log_dict(loss_metrics, on_epoch=True, on_step=False, prog_bar=True)
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
         self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
 
-        return loss
+        return loss_metrics["test_loss"]
+    
+    def training_epoch_end(self, outputs) -> None:
+        loss = np.mean([output['loss'] for output in outputs])
+        self.log('train_loss', loss, on_epoch=True, on_step=False, prog_bar=True)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)

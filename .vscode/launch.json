@@ -14,15 +14,18 @@
             "args": [
                 "--model_name", "TGCN",
                 "--train_start", "2019-01-01",
-                "--train_end", "2019-04-01",
-                "--test_end", "2020-05-30",
-                "--val_end", "2019-04-30",
+                "--train_end", "2019-05-01",
+                "--test_end", "2019-06-02",
+                "--val_end", "2019-06-30",
                 "--covariates",
-                "--max_epochs", "1",
+                "--batch_size", "64",
+                "--max_epochs", "10",
                 "--censored",
                 "--hidden_dim", "32",
                 "--dataloader", "EVChargersDatasetSpatial",
-                "--loss", "CPNLL"
+                "--loss", "CPNLL",
+                "--forecast_lead", "24",
+                "--censor_level", "2",
             ]
         },
         {

@@ -1,6 +1,9 @@
-import logging
 import argparse
-import pytorch_lightning as pl
+from pytorch_lightning import Trainer
+from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.callbacks import ModelCheckpoint
+import wandb
+
 import numpy as np
 import pandas as pd
 
@@ -8,8 +11,6 @@ import datasets
 import architectures
 from utils.losses import get_loss
 from architectures import AR, TGCN, LSTM, GRU, ARNet
-
-logger = logging.getLogger('Thesis.Train')
 
 def get_model(args, dm):
     model = None
@@ -35,7 +36,7 @@ def get_model(args, dm):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-    parser = pl.Trainer.add_argparse_args(parser)
+    parser = Trainer.add_argparse_args(parser)
 
     parser.add_argument("--model_name", type=str, help="The name of the model", 
         choices=("AR", "ARNet", "LSTM", "TGCN", "GRU"), required=True)
@@ -71,7 +72,14 @@ if __name__ == "__main__":
     
     model = get_model(args, dm)
 
-    trainer = pl.Trainer.from_argparse_args(args)
+    wandb.login()
+
+    wandb_logger = WandbLogger(project='Thesis', log_model='all')
+    wandb_logger.watch(model)
+
+    checkpoint_callback = ModelCheckpoint(monitor='val_loss', mode='max')
+    
+    trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
     trainer.fit(model, dm)
     trainer.save_checkpoint(f"trained_models/best_model_{args.model_name}_{args.loss}.ckpt")
 
@@ -80,6 +88,8 @@ if __name__ == "__main__":
     #if (args.model_name == "TGCN" or args.model_name == "LSTM" or args.model_name == "GRU" or args.model_name == "AR" or args.model_name == "ARNet"):
     # TODO implement test-step for rest of the models
     trainer.test(model, datamodule=dm)
+    wandb.finish()
+    df_dates = pd.DataFrame(dm.y_dates, columns=['Date'])
     df_true = pd.DataFrame(model.test_y, columns=dm.cluster_names)
     df_pred = pd.DataFrame(model.test_y_hat, columns=np.char.add(dm.cluster_names, '_pred'))
-    pd.concat([df_true, df_pred], axis=1).to_csv(f"predictions/predictions_{args.model_name}_{args.loss}.csv")
+    pd.concat([df_dates, df_true, df_pred], axis=1).to_csv(f"predictions/predictions_{args.model_name}_{args.loss}_{args.hidden_dim}_{args.censor_level}.csv")

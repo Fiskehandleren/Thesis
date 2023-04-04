@@ -178,8 +178,8 @@ def get_targets_and_features_tgcn(
 
     sessions_array_shifted = np.array(df_test[node_names].shift(-forecast_lead)) # -1 because the next line shifts by 1 by default
     y = np.array([
-        sessions_array_shifted[i + sequence_length, :].T
-        for i in range(sessions_array_shifted.shape[0] - sequence_length)
+        sessions_array_shifted[i + sequence_length + forecast_lead, :].T
+        for i in range(sessions_array_shifted.shape[0] - sequence_length - forecast_lead)
     ])
 
     time_features = np.array(df_test[features], dtype=int)
@@ -195,8 +195,8 @@ def get_targets_and_features_tgcn(
     if censored:
         _tau = np.array(df_test.filter(like='_TAU').shift(-forecast_lead), dtype=int)
         tau = np.array([
-            _tau[i + sequence_length, :].T
-            for i in range(_tau.shape[0] - sequence_length)
+            _tau[i + sequence_length + forecast_lead, :].T
+            for i in range(_tau.shape[0] - sequence_length - forecast_lead)
         ])
     else:
         tau = None
