@@ -73,15 +73,15 @@ class GRU(pl.LightningModule):
             loss = self._loss_fn(y_predict, y)
         
         mse = F.mse_loss(y_predict, y)
-
+        mae = F.l1_loss(y_predict, y)
         metrics = {
             "train_loss": loss,
             "train_mse": mse,
-            "train_rmse": sqrt(mse)
+            "train_rmse": sqrt(mse),
+            "train_mae": mae
         }
 
-        self.log("train/loss", loss)
-        #self.log_dict(metrics, prog_bar=True)
+        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
         return loss
     
     def validation_step(self, batch, batch_idx):
@@ -99,12 +99,14 @@ class GRU(pl.LightningModule):
             loss = self._loss_fn(y_predict, y)
         
         mse = F.mse_loss(y_predict, y)
+        mae = F.l1_loss(y_predict, y)       
         metrics = {
             "val_loss": loss,
-            "val_rmse": np.sqrt(mse),
-            "val_mse": mse
+            "val_rmse": sqrt(mse),
+            "val_mse": mse,
+            "val_mae": mae
         }
-        #self.log("loss", loss)
+
         self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
         return loss
     
@@ -124,12 +126,14 @@ class GRU(pl.LightningModule):
             loss = self._loss_fn(y_predict, y)
         
         mse = F.mse_loss(y_predict, y)
+        mae = F.l1_loss(y_predict, y)
         metrics = {
             "test_loss": loss,
             "test_mse": mse,
-            "test_rmse": sqrt(mse)
+            "test_rmse": sqrt(mse),
+            "test_mae": mae
         }
-        #self.log("loss", loss)
+
         self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
         
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))

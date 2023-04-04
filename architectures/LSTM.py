@@ -77,11 +77,14 @@ class LSTM(pl.LightningModule):
             loss = self._loss_fn(y_predict, y)
         
         mse = F.mse_loss(y_predict, y)
+        mae = F.l1_loss(y_predict, y)
         metrics = {
             "train_loss": loss,
             "train_mse": mse,
-            "train_rmse": sqrt(mse)
+            "train_rmse": sqrt(mse),
+            "train_mae": mae
         }
+
         self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
         return loss
     
@@ -100,10 +103,12 @@ class LSTM(pl.LightningModule):
             loss = self._loss_fn(y_predict, y)
         
         mse = F.mse_loss(y_predict, y)
+        mae = F.l1_loss(y_predict, y)       
         metrics = {
             "val_loss": loss,
             "val_rmse": sqrt(mse),
-            "val_mse": mse
+            "val_mse": mse,
+            "val_mae": mae
         }
         self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
         return loss
@@ -123,10 +128,12 @@ class LSTM(pl.LightningModule):
         else:
             loss = self._loss_fn(y_predict, y)
         mse = F.mse_loss(y_predict, y)
+        mae = F.l1_loss(y_predict, y)
         metrics = {
             "test_loss": loss,
             "test_mse": mse,
-            "test_rmse": sqrt(mse)
+            "test_rmse": sqrt(mse),
+            "test_mae": mae
         }
 
         self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
