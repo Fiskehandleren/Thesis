@@ -162,7 +162,7 @@ def get_targets_and_features_tgcn(
         df_test['year'] = df.Period.dt.year - df.Period.dt.year.min()
         features.append('year')
     
-    node_names = df_test.columns.difference(['Period'] + features + list(df.filter(like='_TAU').columns))
+    node_names = df_test.columns.difference(['Period'] + features + list(df.filter(like='_TAU').columns) + list(df.filter(like='_TRUE').columns))
     num_nodes = len(node_names)
 
     # Get initial lagged features by taking the first `sequence_length` observations and treat

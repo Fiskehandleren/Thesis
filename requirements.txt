@@ -19,10 +19,5 @@ pyjwt==2.6.0
 pyopenssl==23.0.0
 pysocks==1.7.1
 pytorch-lightning==1.9.2
-pyu2f==0.1.5
-tensorboard==2.12.0
-torch-geometric-temporal==0.54.0
-torchaudio==0.13.1
-torchvision
 unicodedata2==15.0.0
 wandb==0.14.0
