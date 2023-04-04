@@ -7,18 +7,16 @@
 voltash
 
 #Load preinstalled modules
-module load python3/3.9.14
+module load cuda/11.6
 
-#Create a virtual environment for Python3
-python3 -m venv thesis
+# if no conda, follow this https://www.hpc.dtu.dk/?page_id=3678 
 
-#Activate virtual environment
-source thesis/bin/activate
+source $HOME/miniconda3/bin/activate
+conda install python=
+pip install torch==1.13.1+cu116 torchvision==0.14.1+cu116 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu116
+pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-1.13.0+cu116.html
+pip install torch-geometric-temporal
 
-#If pip3 fails, use: which pip3, to make sure it is the one in the virutal environment.
-#which pip3
+pip install -r requirements.txt
 
-python -m pip install -r requirements.txt
-python -m pip install 
-#Panda for handling data
-# module load pandas/0.20.3-python-3.6.2
+echo "Done"

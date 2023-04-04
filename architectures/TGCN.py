@@ -25,8 +25,8 @@ class TGCN(LightningModule):
     ):
         super().__init__()
         self.loss_fn = loss_fn
-        self.edge_index = edge_index.to(self.device)
-        self.edge_weight = edge_weight.to(self.device)
+        self.edge_index = edge_index
+        self.edge_weight = edge_weight
         self.censored = censored
         # Hyperparameters
         self.sequence_length = sequence_length
@@ -62,13 +62,18 @@ class TGCN(LightningModule):
             x, y, tau = batch
         else:
             x, y = batch
+
+        # Transfer to device
+        self.edge_index = self.edge_index.to(self.device)
+        self.edge_weight = self.edge_weight.to(self.device)
+        
         y_hat, _ = self(x, self.edge_index, self.edge_weight)
         y_hat = y_hat.view(-1, x.shape[1])
-        
         if self.censored:
             loss = self.loss_fn(y_hat, y, tau)
         else:
             loss = self.loss_fn(y_hat, y)
+        # TODO calculate RMSE and MSE for REAL data (not censored)
         mse = F.mse_loss(y_hat, y)
 
         return {
