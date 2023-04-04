@@ -18,7 +18,7 @@ source thesis/bin/activate
 #If pip3 fails, use: which pip3, to make sure it is the one in the virutal environment.
 #which pip3
 
-pip3 install -r requirements.txt
-
+python -m pip install -r requirements.txt
+python -m pip install 
 #Panda for handling data
 # module load pandas/0.20.3-python-3.6.2

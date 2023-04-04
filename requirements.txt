@@ -23,6 +23,6 @@ pyu2f==0.1.5
 tensorboard==2.12.0
 torch-geometric-temporal==0.54.0
 torchaudio==0.13.1
-torchvision==0.14.1a0
+torchvision
 unicodedata2==15.0.0
 wandb==0.14.0
