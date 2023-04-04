@@ -3,3 +3,4 @@
 .DS_Store
 lightning_logs/
 wandb/
+thesis/
