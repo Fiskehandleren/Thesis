@@ -36,107 +36,52 @@ class AR(pl.LightningModule):
         out = self.fc1(x)
         return out.exp()
     
-    def training_step(self, batch, batch_idx):
-        # Run forward calculation
+    def _get_preds_loss_metrics(self, batch, stage):
         if self.censored:
             x, y, tau, y_true = batch
         else:
             x, y = batch
-
-        y_predict = self(x).view(-1)
-
-        # Compute loss.
+        
+        y_hat = self(x).view(-1)
+        
         if self.censored:
-            loss = self._loss_fn(y_predict, y, tau)
+            loss = self._loss_fn(y_hat, y, tau)
             loss_uncen = nn.PoissonNLLLoss(log_input=False)
-            loss_true = loss_uncen(y_predict, y_true)
+            loss_true = loss_uncen(y_hat, y_true)
 
-            mse = F.mse_loss(y_predict, y_true)
-            mae = F.l1_loss(y_predict, y_true)  
+            mse = F.mse_loss(y_hat, y_true)
+            mae = F.l1_loss(y_hat, y_true) 
         else:
-            loss = self._loss_fn(y_predict, y)
+            loss = self._loss_fn(y_hat, y)
             loss_true = loss
-            mse = F.mse_loss(y_predict, y)
-            mae = F.l1_loss(y_predict, y)  
+            mse = F.mse_loss(y_hat, y)
+            mae = F.l1_loss(y_hat, y)  
 
-        metrics = {
-            "train_loss": loss,
-            "train_loss_true": loss_true,
-            "train_mse": mse,
-            "train_rmse": sqrt(mse),
-            "train_mae": mae
-        }
-
-        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
-        return loss
+        return {
+            f"{stage}_loss": loss,
+            f"{stage}_loss_true": loss_true,
+            f"{stage}_mae": mae,
+            f"{stage}_rmse": sqrt(mse),
+            f"{stage}_mse": mse,
+        }, y, y_hat
+    
+    def training_step(self, batch, batch_idx):
+        loss_metrics, _, _= self._get_preds_loss_metrics(batch, "train")
+        #self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        return loss_metrics["train_loss"]
     
     def validation_step(self, batch, batch_idx):
-        if self.censored:
-            x, y, tau, y_true = batch
-        else:
-            x, y = batch
-
-        y_predict = self(x).view(-1)
-
-        # Compute loss.
-        if self.censored:
-            loss = self._loss_fn(y_predict, y, tau)
-            loss_uncen = nn.PoissonNLLLoss(log_input=False)
-            loss_true = loss_uncen(y_predict, y_true)
-            mse = F.mse_loss(y_predict, y_true)
-            mae = F.l1_loss(y_predict, y_true)  
-        else:
-            loss = self._loss_fn(y_predict, y)
-            loss_true = loss
-            mse = F.mse_loss(y_predict, y)
-            mae = F.l1_loss(y_predict, y)  
-
-        metrics = {
-            "val_loss": loss,
-            "val_loss_true": loss_true,
-            "val_rmse": sqrt(mse),
-            "val_mse": mse,
-            "val_mae": mae
-        }
-        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
-        return loss
+        loss_metrics, _, _ = self._get_preds_loss_metrics(batch, "val")
+        self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        return loss_metrics["val_loss"]
     
-
     def test_step(self, batch, batch_idx):
-        if self.censored:
-            x, y, tau, y_true = batch
-        else:
-            x, y = batch
-
-        y_predict = self(x).view(-1)
-
-        # Compute loss.
-        if self.censored:
-            loss = self._loss_fn(y_predict, y, tau)
-            loss_uncen = nn.PoissonNLLLoss(log_input=False)
-            loss_true = loss_uncen(y_predict, y_true)
-            mse = F.mse_loss(y_predict, y_true)
-            mae = F.l1_loss(y_predict, y_true)  
-        else:
-            loss = self._loss_fn(y_predict, y)
-            loss_true = loss
-            mse = F.mse_loss(y_predict, y)
-            mae = F.l1_loss(y_predict, y)  
-
-        metrics = {
-            "test_loss": loss,
-            "test_loss_true": loss_true,
-            "test_mse": mse,
-            "test_rmse": sqrt(mse),
-            "test_mae": mae
-        }
-
-        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
-        
+        loss_metrics, y, y_hat = self._get_preds_loss_metrics(batch, "test")
+        self.log_dict(loss_metrics, on_epoch=True, on_step=False, prog_bar=True)
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
-        self.test_y_hat = np.concatenate((self.test_y_hat, y_predict.cpu().detach().numpy()))
+        self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
 
-        return loss
+        return loss_metrics["test_loss"]
 
 
     def configure_optimizers(self):
