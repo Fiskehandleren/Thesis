@@ -4,11 +4,10 @@
 #Enter Password
 
 #Open interactive GPU node
-k40sh
+voltash
 
 #Load preinstalled modules
 module load python3/3.9.14
-module load gcc
 
 #Create a virtual environment for Python3
 python3 -m venv thesis
