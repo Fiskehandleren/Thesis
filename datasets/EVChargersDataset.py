@@ -34,6 +34,7 @@ class EVChargersDataset(pl.LightningDataModule):
         self.cluster_names =  np.array([cluster])
         if self.censored:
             self.tau = cluster + '_TAU' 
+            self.true_target = cluster + '_TRUE'
         else:
             self.tau = None
         self.train_start = train_start
@@ -51,11 +52,13 @@ class EVChargersDataset(pl.LightningDataModule):
         self.input_dimensions = len(self.features)
 
     def train_dataloader(self):
-        train_dataset = dataloader.SequenceDataset(self.df_train, self.target, self.features, self.tau, self.sequence_length)
+        train_dataset = dataloader.SequenceDataset(self.df_train, self.target, self.features, 
+                                                   self.tau, self.true_target, self.sequence_length)
         return DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, num_workers = 8)
 
     def test_dataloader(self):
-        test_dataset = dataloader.SequenceDataset(self.df_test, self.target, self.features, self.tau, self.sequence_length)
+        test_dataset = dataloader.SequenceDataset(self.df_test, self.target, self.features, 
+                                                  self.tau, self.true_target, self.sequence_length)
         return DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers = 8)
     
 

@@ -64,7 +64,7 @@ class LSTM(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         # Run forward calculation
         if self.censored:
-            x, y, tau = batch
+            x, y, tau, y_true = batch
         else:
             x, y = batch
 
@@ -73,13 +73,20 @@ class LSTM(pl.LightningModule):
         # Compute loss.
         if self.censored:
             loss = self._loss_fn(y_predict, y, tau)
+            loss_uncen = nn.PoissonNLLLoss(log_input=False)
+            loss_true = loss_uncen(y_predict, y_true)
+
+            mse = F.mse_loss(y_predict, y_true)
+            mae = F.l1_loss(y_predict, y_true)  
         else:
             loss = self._loss_fn(y_predict, y)
-        
-        mse = F.mse_loss(y_predict, y)
-        mae = F.l1_loss(y_predict, y)
+            loss_true = loss
+            mse = F.mse_loss(y_predict, y)
+            mae = F.l1_loss(y_predict, y)  
+
         metrics = {
             "train_loss": loss,
+            "train_loss_true": loss_true,
             "train_mse": mse,
             "train_rmse": sqrt(mse),
             "train_mae": mae
@@ -90,7 +97,7 @@ class LSTM(pl.LightningModule):
     
     def validation_step(self, batch, batch_idx):
         if self.censored:
-            x, y, tau = batch
+            x, y, tau, y_true = batch
         else:
             x, y = batch
 
@@ -99,13 +106,19 @@ class LSTM(pl.LightningModule):
         # Compute loss.
         if self.censored:
             loss = self._loss_fn(y_predict, y, tau)
+            loss_uncen = nn.PoissonNLLLoss(log_input=False)
+            loss_true = loss_uncen(y_predict, y_true)
+            mse = F.mse_loss(y_predict, y_true)
+            mae = F.l1_loss(y_predict, y_true)  
         else:
             loss = self._loss_fn(y_predict, y)
-        
-        mse = F.mse_loss(y_predict, y)
-        mae = F.l1_loss(y_predict, y)       
+            loss_true = loss
+            mse = F.mse_loss(y_predict, y)
+            mae = F.l1_loss(y_predict, y)  
+
         metrics = {
             "val_loss": loss,
+            "val_loss_true": loss_true,
             "val_rmse": sqrt(mse),
             "val_mse": mse,
             "val_mae": mae
@@ -116,7 +129,7 @@ class LSTM(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         if self.censored:
-            x, y, tau = batch
+            x, y, tau, y_true = batch
         else:
             x, y = batch
 
@@ -125,12 +138,19 @@ class LSTM(pl.LightningModule):
         # Compute loss.
         if self.censored:
             loss = self._loss_fn(y_predict, y, tau)
+            loss_uncen = nn.PoissonNLLLoss(log_input=False)
+            loss_true = loss_uncen(y_predict, y_true)
+            mse = F.mse_loss(y_predict, y_true)
+            mae = F.l1_loss(y_predict, y_true)  
         else:
             loss = self._loss_fn(y_predict, y)
-        mse = F.mse_loss(y_predict, y)
-        mae = F.l1_loss(y_predict, y)
+            loss_true = loss
+            mse = F.mse_loss(y_predict, y)
+            mae = F.l1_loss(y_predict, y)  
+
         metrics = {
             "test_loss": loss,
+            "test_loss_true": loss_true,
             "test_mse": mse,
             "test_rmse": sqrt(mse),
             "test_mae": mae

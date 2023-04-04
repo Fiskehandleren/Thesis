@@ -221,13 +221,13 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
     ## TODO: add option for validation set
     target_var = target
     if is_censored:
-        ## ATTEMPT: shift tau variable too
+
         path = os.path.join(ROOT_PATH, f'../data/charging_session_count_1_to_30_censored_{censorship_level}.csv')
         df = pd.read_csv(path, parse_dates=['Period'])
 
         df_test = df.copy()
-
         df_test[target_var + '_TAU'] = df_test[target_var + '_TAU'].shift(-forecast_lead)
+        df_test[target_var + '_TRUE'] = df_test[target_var + '_TRUE'].shift(-forecast_lead)
 
         if multiple_stations:
             
@@ -268,8 +268,7 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
    
     ## create end points for dataset
     test_start = train_end + " 00:30:00"
-    print(train_end)
-    print(test_start)
+  
     #val_start = test_end + "00:00:30"
     #val_end = val_start + "00:00:30"
     if (type(train_end) != int):
@@ -324,7 +323,7 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
 
 class SequenceDataset(Dataset):
     ## Class to retrieve time series elements appropirately with CENSORED target variable y
-    def __init__(self, dataframe, target, features, threshold=None, sequence_length=5):
+    def __init__(self, dataframe, target, features, threshold=None, true_target=None, sequence_length=5):
         self.features = features
         self.target = target
         self.sequence_length = sequence_length
@@ -333,6 +332,7 @@ class SequenceDataset(Dataset):
 
         if threshold is not None:
             self.tau = torch.tensor(dataframe[threshold].values).float()
+            self.y_true = torch.tensor(dataframe[true_target].values).float()
         else:
             self.tau = None
         
@@ -350,6 +350,6 @@ class SequenceDataset(Dataset):
             x = torch.cat((padding, x), 0)
 
         if self.tau is not None:
-            return x, self.y[i], self.tau[i]
+            return x, self.y[i], self.tau[i], self.y_true[i]
         else:
             return x, self.y[i]
