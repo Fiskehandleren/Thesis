@@ -14,7 +14,7 @@ module load gcc
 python3 -m venv thesis
 
 #Activate virtual environment
-source ~/thesis/bin/activate
+source thesis/bin/activate
 
 #If pip3 fails, use: which pip3, to make sure it is the one in the virutal environment.
 #which pip3
