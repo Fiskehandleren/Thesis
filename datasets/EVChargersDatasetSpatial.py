@@ -117,13 +117,14 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
 
 
 class CensoredSpatialDataset(Dataset):
-    def __init__(self, X, y, tau):
+    def __init__(self, X, y, tau, y_true):
         self.X = X
         self.y = y
         self.tau = tau
+        self.y_true = y_true
 
     def __len__(self):
         return self.X.shape[0]
 
     def __getitem__(self, i):
-        return self.X[i], self.y[i], self.tau[i]
+        return self.X[i], self.y[i], self.tau[i], self.y_true[i]

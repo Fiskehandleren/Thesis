@@ -5,6 +5,7 @@ from torch_geometric_temporal.nn.recurrent import TGCN2
 from pytorch_lightning import LightningModule
 from torch import sqrt
 import numpy as np
+from torch import nn
 import wandb
 
 
@@ -59,7 +60,7 @@ class TGCN(LightningModule):
     
     def _get_preds_loss_metrics(self, batch, stage):
         if self.censored:
-            x, y, tau = batch
+            x, y, tau, y_true = batch
         else:
             x, y = batch
 
@@ -71,17 +72,25 @@ class TGCN(LightningModule):
         y_hat = y_hat.view(-1, x.shape[1])
         if self.censored:
             loss = self.loss_fn(y_hat, y, tau)
+            loss_uncen = nn.PoissonNLLLoss(log_input=False)
+            loss_true = loss_uncen(y_hat, y_true)
+
+            mse = F.mse_loss(y_hat, y_true)
+            mae = F.l1_loss(y_hat, y_true) 
         else:
             loss = self.loss_fn(y_hat, y)
-        # TODO calculate RMSE and MSE for REAL data (not censored)
-        mse = F.mse_loss(y_hat, y)
+            loss_true = loss
+            mse = F.mse_loss(y_hat, y)
+            mae = F.l1_loss(y_hat, y)  
 
         return {
             f"{stage}_loss": loss,
+            f"{stage}_loss_true": loss_true,
+            f"{stage}_mae": mae,
             f"{stage}_rmse": sqrt(mse),
             f"{stage}_mse": mse,
         }, y, y_hat
-
+    
     def training_step(self, batch, batch_idx):
         loss_metrics, _, _= self._get_preds_loss_metrics(batch, "train")
         #self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
