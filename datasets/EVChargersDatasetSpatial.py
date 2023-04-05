@@ -81,7 +81,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             self.tau_train, self.tau_test = tau[train_start_index:train_end_index], tau[train_end_index:]
             self.y_train_true, self.y_test_true = y_true[train_start_index:train_end_index], tau[train_end_index:]
 
-        G, adj, self.edge_index, self.edge_weight = dataloader.get_graph(self.df)
+        _, _, self.edge_index, self.edge_weight = dataloader.get_graph(self.df)
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=8)

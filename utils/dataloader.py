@@ -14,22 +14,20 @@ ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 def load_data():
     path = os.path.join(ROOT_PATH, '../data/ChargePoint Data CY20Q4.csv')
+    required_columns = ['Station Name', 'Start Date', 'End Date',
+                        'Total Duration (hh:mm:ss)', 'Charging Time (hh:mm:ss)',
+                        'Longitude', 'Latitude', 'Plug Type', 'Port Number'
+                        ]
     df = pd.read_csv(path, 
-                    dtype={'Station Name': str}, 
+                    dtype={'Station Name': str, 'Longitude': 'float32', 'Latitude': 'float32','Port Number': 'int8'}, 
                     parse_dates=['Start Date', 'Total Duration (hh:mm:ss)'], 
                     infer_datetime_format=True,
+                    sep=',',
+                    usecols=required_columns,
                     low_memory=False)
 
     # Make a unique id for each row
     df['Id'] = df.index
-    # Drop columns that are not needed
-    df.drop(
-        ['User ID', 'County', 'City', 'Postal Code', 'Driver Postal Code',
-        'State/Province', 'Currency', 'EVSE ID', 'Transaction Date (Pacific Time)',
-        'GHG Savings (kg)', 'Gasoline Savings (gallons)', 'Org Name',
-        'Address 1', 'System S/N', 'Ended By',
-        'End Time Zone', 'Start Time Zone', 'Country', 'Model Number'
-        ], axis=1, inplace=True)
 
     df['Total Duration (min)'] = pd.to_timedelta(df['Total Duration (hh:mm:ss)']).dt.total_seconds()/60
     df['Charging Time (min)'] = pd.to_timedelta(df['Charging Time (hh:mm:ss)']).dt.total_seconds()/60
@@ -167,7 +165,7 @@ def get_targets_and_features_tgcn(
 
     # Get initial lagged features by taking the first `sequence_length` observations and treat
     # the `sequence_length`+1 observation as the target
-    sessions_array = np.array(df_test[node_names])
+    sessions_array = df_test[node_names].to_numpy(dtype=int)
 
     lag_feats = np.array([
         sessions_array[i : i + sequence_length, :].T
@@ -176,13 +174,13 @@ def get_targets_and_features_tgcn(
     # Reshape to fit being concatenated with the datetime features
     lag_feats = lag_feats.reshape(-1, num_nodes, 1, sequence_length)
 
-    sessions_array_shifted = np.array(df_test[node_names].shift(-forecast_lead)) # -1 because the next line shifts by 1 by default
+    sessions_array_shifted = df_test[node_names].shift(-forecast_lead).to_numpy(dtype=int) # -1 because the next line shifts by 1 by default
     y = np.array([
         sessions_array_shifted[i + sequence_length + forecast_lead, :].T
         for i in range(sessions_array_shifted.shape[0] - sequence_length - forecast_lead)
     ])
 
-    time_features = np.array(df_test[features], dtype=int)
+    time_features = df_test[features].to_numpy(dtype=int)
 
     times = np.array([
         [time_features[i : i + sequence_length, :].T]
@@ -193,12 +191,12 @@ def get_targets_and_features_tgcn(
     times = times.repeat(num_nodes, axis=1)
 
     if censored:
-        _tau = np.array(df_test.filter(like='_TAU').shift(-forecast_lead), dtype=int)
+        _tau = df_test.filter(like='_TAU').shift(-forecast_lead).to_numpy(dtype=int)
         tau = np.array([
             _tau[i + sequence_length + forecast_lead, :].T
             for i in range(_tau.shape[0] - sequence_length - forecast_lead)
         ])
-        _y_true = np.array(df_test.filter(like='_TRUE').shift(-forecast_lead), dtype=int)
+        _y_true = df_test.filter(like='_TRUE').shift(-forecast_lead).to_numpy(dtype=int)
         y_true = np.array([
             _y_true[i + sequence_length + forecast_lead, :].T
             for i in range(_y_true.shape[0] - sequence_length - forecast_lead)
@@ -210,7 +208,7 @@ def get_targets_and_features_tgcn(
     
     # The `feat` matrix will go from (time_length, nodes, lags) to (time_length, nodes, number of features, lags)
     # We repeat the date-specific features 8 times because we have 8 nodes. 
-    X = np.concatenate((lag_feats, times), axis=2)
+    X = np.concatenate((lag_feats, times), axis=2).astype(np.float16)
 
     return X, y, tau, y_true
 
