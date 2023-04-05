@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# module load cuda/11.6  &>/dev/null
+# module load python3/3.8.2 &>/dev/null
+source thesis/bin/activate
+
+python "$@"
