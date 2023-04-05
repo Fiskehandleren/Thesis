@@ -110,7 +110,7 @@ class TGCN(LightningModule):
         return loss_metrics["test_loss"]
     
     def training_epoch_end(self, outputs) -> None:
-        loss = np.mean([output['loss'] for output in outputs])
+        loss = np.mean([output['loss'].cpu().numpy() for output in outputs])
         self.log('train_loss', loss, on_epoch=True, on_step=False, prog_bar=True)
 
     def configure_optimizers(self):
