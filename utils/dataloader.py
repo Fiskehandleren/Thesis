@@ -138,8 +138,9 @@ def get_graph(df, adjecency_threshold_km=3):
 def get_targets_and_features_tgcn(
         df, sequence_length=30, forecast_lead=1, 
         censored=True, add_month=True, add_hour=True, add_day_of_week=True, add_year=True):
-    # By default we already shift the target by 1 timestep
-    forecast_lead += 1
+    # By default we already shift the target by 1 timestep, so we only have to shift by additionaly 
+    # forecast_leard - 1 steps
+    forecast_lead -= 1
 
     df_test = df.copy()
     features, new_cols = [], []
