@@ -13,30 +13,48 @@ ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
 def load_data():
-    path = os.path.join(ROOT_PATH, '../data/ChargePoint Data CY20Q4.csv')
-    required_columns = ['Station Name', 'Start Date', 'End Date',
-                        'Total Duration (hh:mm:ss)', 'Charging Time (hh:mm:ss)',
-                        'Longitude', 'Latitude', 'Plug Type', 'Port Number'
-                        ]
-    df = pd.read_csv(path, 
-                    dtype={'Station Name': str, 'Longitude': 'float32', 'Latitude': 'float32','Port Number': 'int8'}, 
-                    parse_dates=['Start Date', 'Total Duration (hh:mm:ss)'], 
-                    infer_datetime_format=True,
-                    sep=',',
-                    usecols=required_columns,
-                    low_memory=False)
+    path_processed = os.path.join(ROOT_PATH, '../data/ChargePoint Data CY20Q4_fixed_dates.csv')
+    if os.path.exists(path_processed):
+        df = pd.read_csv(path_processed,
+                         dtype={
+                            'Station Name' : str,
+                            'Port Number': 'int8',
+                            'Plug Type': str,
+                            'Latitude': 'float32',
+                            'Longitude':'float32',
+                            'Total Duration (min)': 'float16',
+                            'Charging Time (min)': 'float16',
+                            'Cluster': str
+                        },
+                        parse_dates=['Start Date', 'End Date'], 
+                        infer_datetime_format=True,
+                        )
+    else:
+        path_unprocessed = os.path.join(ROOT_PATH, '../data/ChargePoint Data CY20Q4.csv')
+        required_columns = ['Station Name', 'Start Date', 'End Date',
+                            'Total Duration (hh:mm:ss)', 'Charging Time (hh:mm:ss)',
+                            'Longitude', 'Latitude', 'Plug Type', 'Port Number'
+                            ]
+        df = pd.read_csv(path_unprocessed, 
+                        dtype={'Station Name': str, 'Longitude': 'float32', 'Latitude': 'float32','Port Number': 'int8'}, 
+                        parse_dates=['Start Date', 'Total Duration (hh:mm:ss)'], 
+                        infer_datetime_format=True,
+                        usecols=required_columns,
+                        low_memory=False)
 
-    # Make a unique id for each row
-    df['Id'] = df.index
+        # Make a unique id for each row
+        df['Id'] = df.index
 
-    df['Total Duration (min)'] = pd.to_timedelta(df['Total Duration (hh:mm:ss)']).dt.total_seconds()/60
-    df['Charging Time (min)'] = pd.to_timedelta(df['Charging Time (hh:mm:ss)']).dt.total_seconds()/60
-    df.drop(['Total Duration (hh:mm:ss)', 'Charging Time (hh:mm:ss)'], axis=1, inplace=True)
+        df['Total Duration (min)'] = pd.to_timedelta(df['Total Duration (hh:mm:ss)']).dt.total_seconds()/60
+        df['Charging Time (min)'] = pd.to_timedelta(df['Charging Time (hh:mm:ss)']).dt.total_seconds()/60
+        df.drop(['Total Duration (hh:mm:ss)', 'Charging Time (hh:mm:ss)'], axis=1, inplace=True)
 
-    df['End Date'] = df['End Date'].apply(convert_to_datetime)
+        df['End Date'] = df['End Date'].apply(convert_to_datetime)
 
-    # Create clusters 
-    df['Cluster'] = df['Station Name'].str.split(' ').str[4]
+        # Create clusters 
+        df['Cluster'] = df['Station Name'].str.split(' ').str[4]
+        df.to_csv(path_processed)
+
     return df
 
 def convert_to_datetime(serial):
@@ -175,7 +193,7 @@ def get_targets_and_features_tgcn(
     # Reshape to fit being concatenated with the datetime features
     lag_feats = lag_feats.reshape(-1, num_nodes, 1, sequence_length)
 
-    sessions_array_shifted = df_test[node_names].shift(-forecast_lead).to_numpy(dtype=int) # -1 because the next line shifts by 1 by default
+    sessions_array_shifted = df_test[node_names].shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int) # -1 because the next line shifts by 1 by default
     y = np.array([
         sessions_array_shifted[i + sequence_length + forecast_lead, :].T
         for i in range(sessions_array_shifted.shape[0] - sequence_length - forecast_lead)
@@ -192,12 +210,12 @@ def get_targets_and_features_tgcn(
     times = times.repeat(num_nodes, axis=1)
 
     if censored:
-        _tau = df_test.filter(like='_TAU').shift(-forecast_lead).to_numpy(dtype=int)
+        _tau = df_test.filter(like='_TAU').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int)
         tau = np.array([
             _tau[i + sequence_length + forecast_lead, :].T
             for i in range(_tau.shape[0] - sequence_length - forecast_lead)
         ])
-        _y_true = df_test.filter(like='_TRUE').shift(-forecast_lead).to_numpy(dtype=int)
+        _y_true = df_test.filter(like='_TRUE').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int)
         y_true = np.array([
             _y_true[i + sequence_length + forecast_lead, :].T
             for i in range(_y_true.shape[0] - sequence_length - forecast_lead)
