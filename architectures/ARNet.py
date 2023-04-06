@@ -75,6 +75,11 @@ class ARNet(pl.LightningModule):
         #self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["train_loss"]
     
+    def training_epoch_end(self, outputs) -> None:
+        loss = np.mean([output['loss'].cpu().numpy() for output in outputs])
+        self.log('train_loss', loss, on_epoch=True, on_step=False, prog_bar=True)
+
+
     def validation_step(self, batch, batch_idx):
         loss_metrics, _, _ = self._get_preds_loss_metrics(batch, "val")
         self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)

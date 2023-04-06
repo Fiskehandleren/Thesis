@@ -95,10 +95,12 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
     def setup(self, stage=None):
         if self.censored:
             self.train_dataset = CensoredSpatialDataset(
-                torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train), torch.FloatTensor(self.tau_train), torch.FloatTensor(self.y_train_true)
+                torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train),
+                torch.FloatTensor(self.tau_train), torch.FloatTensor(self.y_train_true)
             )
             self.val_dataset = CensoredSpatialDataset(
-                torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test), torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true)
+                torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test),
+                torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true)
             )
         else:
             self.train_dataset = TensorDataset(
