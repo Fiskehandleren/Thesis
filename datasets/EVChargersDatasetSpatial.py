@@ -6,6 +6,7 @@ import utils.dataloader as dataloader
 import argparse
 import numpy as np
 import torch
+import multiprocessing as mp
 
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -37,6 +38,8 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.val_start = test_end + " 00:30:00"
         self.val_end = val_end
         self.censored = censored
+
+        self.num_workers = mp.cpu_count()
 
         self.df = dataloader.load_data()
         dataset_name = f'../data/charging_session_count_1_to_30{f"_censored_{censor_level}" if self.censored else ""}.csv'
@@ -84,13 +87,13 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         _, _, self.edge_index, self.edge_weight = dataloader.get_graph(self.df)
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=8)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
     def setup(self, stage=None):
         if self.censored:
