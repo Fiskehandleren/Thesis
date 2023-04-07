@@ -56,7 +56,7 @@ if __name__ == "__main__":
     parser.add_argument("--train_start", type=str, required=True)
     parser.add_argument("--train_end", type=str, required=True)
     parser.add_argument("--test_end", type=str, required=True)
-
+    parser.add_argument("--val_end", type=str, required=False)
 
 
     temp_args, _ = parser.parse_known_args()
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     # TODO implement test-step for rest of the models
     trainer.test(model, datamodule=dm)
     wandb.finish()
-    
+
     df_dates = pd.DataFrame(dm.y_dates, columns=['Date'])
     df_true = pd.DataFrame(model.test_y, columns=dm.cluster_names)
     df_pred = pd.DataFrame(model.test_y_hat, columns=np.char.add(dm.cluster_names, '_pred'))

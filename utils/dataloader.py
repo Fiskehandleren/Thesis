@@ -235,7 +235,7 @@ ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_day_of_week=True, add_year=True, train_start='2016-07-01', 
-                    train_end='2017-07-01', test_end = '2017-08-01', is_censored = False, multiple_stations = False, censorship_level = 1):
+                    train_end='2017-07-01', test_end = '2017-08-01', val_end = '2017-09-01', is_censored = False, multiple_stations = False, censorship_level = 1):
     
     ## Function to load data sets, add covariates and split into training and test set. Has option to censor the input data (arg. is_censored) and 
     ## has option to use several stations to predict demand of one station (arg. multiple_stations)
@@ -292,14 +292,15 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
    
     ## create end points for dataset
     test_start = train_end + " 00:30:00"
-  
-    #val_start = test_end + "00:00:30"
-    #val_end = val_start + "00:00:30"
+    val_start = test_end + " 00:00:30"
     if (type(train_end) != int):
         train_start = df_test[df_test['Period'] == train_start].index.values[0]
         train_end = df_test[df_test['Period'] == train_end].index.values[0]
         test_start = df_test[df_test['Period'] == test_start].index.values[0]
         test_end = df_test[df_test['Period'] == test_end].index.values[0]
+        val_start = df_test[df_test['Period'] == val_start].index.values[0]
+        val_end = df_test[df_test['Period'] == val_end].index.values[0]
+
 
     # Create target variable. We might have more targets if we're running 
     # multivariate models
@@ -338,11 +339,12 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
     ## Create train/test set
     df_train = df_test.loc[train_start:train_end].copy()
     df_test = df_test.loc[test_start:test_end].copy()
+    df_val = df_test.loc[val_start:val_end].copy()
 
     features.remove('Period')
 
     #print("Test set fraction:", len(df_test) / len(df_train))
-    return df_train, df_test, features, target
+    return df_train, df_test, df_val, features, target
 
 
 class SequenceDataset(Dataset):

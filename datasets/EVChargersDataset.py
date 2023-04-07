@@ -19,8 +19,7 @@ class EVChargersDataset(pl.LightningDataModule):
         train_start: str,
         train_end: str,
         test_end: str,
-        #val_end: str,
-        #val_end: str,
+        val_end: str,
         **kwargs
     ):
         
@@ -40,10 +39,11 @@ class EVChargersDataset(pl.LightningDataModule):
         self.train_start = train_start
         self.train_end = train_end
         self.test_end = test_end
+        self.val_end = val_end
         self.multiple_stations = multiple_stations
         self.sequence_length = sequence_length
     
-        self.df_train, self.df_test, self.features, self.target = dataloader.get_datasets_NN(target = self.cluster, forecast_lead = self.forecast_lead, add_month=self.covariates, 
+        self.df_train, self.df_test, self.df_val, self.features, self.target = dataloader.get_datasets_NN(target = self.cluster, forecast_lead = self.forecast_lead, add_month=self.covariates, 
                                                                                                 add_hour = self.covariates, add_day_of_week=self.covariates, add_year = self.covariates,
                                                                                                 train_start = self.train_start, train_end = self.train_end, test_end = self.test_end,
                                                                                                 is_censored = self.censored,
@@ -56,12 +56,17 @@ class EVChargersDataset(pl.LightningDataModule):
     def train_dataloader(self):
         train_dataset = dataloader.SequenceDataset(self.df_train, self.target, self.features, 
                                                    self.tau, self.true_target, self.sequence_length)
-        return DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, num_workers = 8)
+        return DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=8)
 
     def test_dataloader(self):
         test_dataset = dataloader.SequenceDataset(self.df_test, self.target, self.features, 
                                                   self.tau, self.true_target, self.sequence_length)
-        return DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers = 8)
+        return DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
+    
+    def val_dataloader(self):
+        val_dataset = dataloader.SequenceDataset(self.df_val, self.traget, self.features,
+                                                 self.tau, self.true_target, self.sequence_length)
+        return DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
     
 
 
