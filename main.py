@@ -72,8 +72,6 @@ if __name__ == "__main__":
     
     model = get_model(args, dm)
 
-    wandb.login()
-
     wandb_logger = WandbLogger(project='Thesis', log_model='all')
     wandb_logger.watch(model)
 
@@ -81,16 +79,41 @@ if __name__ == "__main__":
     
     trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
     trainer.fit(model, dm)
+    trainer.test(model, datamodule=dm)
+
     trainer.save_checkpoint(f"trained_models/best_model_{args.model_name}_{args.loss}.ckpt")
 
     # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
 
     #if (args.model_name == "TGCN" or args.model_name == "LSTM" or args.model_name == "GRU" or args.model_name == "AR" or args.model_name == "ARNet"):
     # TODO implement test-step for rest of the models
-    trainer.test(model, datamodule=dm)
-    wandb.finish()
 
     df_dates = pd.DataFrame(dm.y_dates, columns=['Date'])
     df_true = pd.DataFrame(model.test_y, columns=dm.cluster_names)
     df_pred = pd.DataFrame(model.test_y_hat, columns=np.char.add(dm.cluster_names, '_pred'))
-    pd.concat([df_dates, df_true, df_pred], axis=1).to_csv(f"predictions/predictions_{args.model_name}_{args.loss}_{args.hidden_dim}_{args.censor_level}.csv")
+    preds = pd.concat([df_dates, df_true, df_pred], axis=1)
+    preds.to_csv(f"predictions/predictions_{args.model_name}_{args.loss}_{args.hidden_dim}_{args.censor_level}.csv")
+
+    import plotly.express as px
+    import plotly.graph_objects as go
+    
+    plot_template = dict(
+    layout=go.Layout({
+        "font_size": 12,
+        "xaxis_title_font_size": 14,
+        "yaxis_title_font_size": 14})
+    )
+
+    #test_index = df_test[df_test['Period'] == TEST_START].index.values[0]
+    preds.set_index('Date', inplace=True, drop=True)
+    fig = px.line(preds[dm.test_start:dm.test_end], labels=dict(created_at="Date", value="Sessions"))
+    #fig.add_vline(x=test_index, line_width=4, line_dash="dash")
+    #fig.add_annotation(xref="paper", x=0.85, yref="paper", y=-0.2, text="Test set start", showarrow=False)
+    fig.update_layout(
+        template=plot_template, legend=dict(orientation='h', y=1.06, title_text="")
+    )
+    fig.write_html("test.html")
+
+    wandb.log({"matplotlib_to_html": wandb.Html(open("test.html"), inject=False)})
+
+    # trainer.logger.log_table(key='sample', dataframe=preds)
