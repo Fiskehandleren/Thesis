@@ -123,8 +123,6 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
     @staticmethod
     def add_data_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--val_end", type=str, required=True)
-
         return parser
 
 
