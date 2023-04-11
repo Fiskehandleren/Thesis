@@ -45,8 +45,8 @@ class EVChargersDataset(pl.LightningDataModule):
     
         self.df_train, self.df_test, self.df_val, self.features, self.target = dataloader.get_datasets_NN(target = self.cluster, forecast_lead = self.forecast_lead, add_month=self.covariates, 
                                                                                                 add_hour = self.covariates, add_day_of_week=self.covariates, add_year = self.covariates,
-                                                                                                train_start = self.train_start, train_end = self.train_end, test_end = self.test_end,
-                                                                                                is_censored = self.censored,
+                                                                                                train_start = self.train_start, train_end = self.train_end, test_end = self.test_end, 
+                                                                                                val_end = self.val_end, is_censored = self.censored,
                                                                                                 multiple_stations=self.multiple_stations, censorship_level = self.censor_level)
 
         self.input_dimensions = len(self.features)
@@ -64,7 +64,7 @@ class EVChargersDataset(pl.LightningDataModule):
         return DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
     
     def val_dataloader(self):
-        val_dataset = dataloader.SequenceDataset(self.df_val, self.traget, self.features,
+        val_dataset = dataloader.SequenceDataset(self.df_val, self.target, self.features,
                                                  self.tau, self.true_target, self.sequence_length)
         return DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
     

@@ -3,9 +3,9 @@ from torch import nn
 
 def get_loss(loss):
     if loss == "MSE":
-        return nn.MSELoss()
+        return mean_squared_error
     elif loss == "PNLL":
-        return nn.PoissonNLLLoss(log_input=False)
+        return poisson_negative_log_likelihood
     elif loss == "CPNLL":
         return censored_poisson_negative_log_likelihood
     else:
@@ -16,6 +16,11 @@ def poisson_negative_log_likelihood(y_predict, y):
     pois = torch.distributions.poisson.Poisson(y_predict)
     return -torch.sum(pois.log_prob(y))
 
+def poisson_negative_log_likelihood(y_predict, y, C):
+    return nn.PoissonNLLLoss(log_input=False)
+
+def mean_squared_error(y_predict, y, C):
+    return nn.MSELoss()
 
 def censored_poisson_negative_log_likelihood(y_predict, y, C):
     """ 

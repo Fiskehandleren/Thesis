@@ -244,36 +244,37 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
     
     ## TODO: add option for validation set
     target_var = target
-    if is_censored:
 
-        path = os.path.join(ROOT_PATH, f'../data/charging_session_count_1_to_30_censored_{censorship_level}.csv')
-        df = pd.read_csv(path, parse_dates=['Period'])
+    ## if censored:
+    path = os.path.join(ROOT_PATH, f'../data/charging_session_count_1_to_30_censored_{censorship_level}.csv')
+    df = pd.read_csv(path, parse_dates=['Period'])
 
-        df_test = df.copy()
-        df_test[target_var + '_TAU'] = df_test[target_var + '_TAU'].shift(-forecast_lead)
-        df_test[target_var + '_TRUE'] = df_test[target_var + '_TRUE'].shift(-forecast_lead)
+    df_test = df.copy()
+    df_test[target_var + '_TAU'] = df_test[target_var + '_TAU'].shift(-forecast_lead)
+    df_test[target_var + '_TRUE'] = df_test[target_var + '_TRUE'].shift(-forecast_lead)
 
-        if multiple_stations:
-            
-            ## keep data from other stations, the period and threshold tau for target variable
-            features = [v for v in df_test.columns if target + '_TAU' in v]
-            other_stations = [v for v in df_test.columns if '_TAU' not in v]
-            features.extend(other_stations)
+    if multiple_stations:
+        
+        ## keep data from other stations, the period and threshold tau for target variable
+        features = [v for v in df_test.columns if target + '_TAU' in v]
+        other_stations = [v for v in df_test.columns if '_TAU' not in v]
+        features.extend(other_stations)
 
-            df_test = df_test[features]
+        df_test = df_test[features]
 
-            ## Remove tau so it isnt and input feature
-            features.remove(target + '_TAU')
+        ## Remove tau so it isnt and input feature
+        features.remove(target + '_TAU')
 
-        else:
-            features = [v for v in df_test.columns if target in v]
-            features.append('Period')
-            df_test = df_test[features]
+    else:
+        features = [v for v in df_test.columns if target in v]
+        features.append('Period')
+        df_test = df_test[features]
 
-            print(features)
-            ## Remove tau so it isnt and input feature
-            features.remove(target + '_TAU')
+        print(features)
+        ## Remove tau so it isnt and input feature
+        features.remove(target + '_TAU')
 
+    '''
     else:
         ## keep everything from input dataframe
         path = os.path.join(ROOT_PATH, '../data/charging_session_count_1_to_30.csv')
@@ -288,11 +289,12 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
             features = [station for station in df_test.columns if target in station]
             features.append('Period')
             df_test = df_test[features]
-
+'''
    
     ## create end points for dataset
     test_start = train_end + " 00:30:00"
-    val_start = test_end + " 00:00:30"
+    val_start = test_end + " 00:30:00"
+
     if (type(train_end) != int):
         train_start = df_test[df_test['Period'] == train_start].index.values[0]
         train_end = df_test[df_test['Period'] == train_end].index.values[0]
