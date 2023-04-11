@@ -90,7 +90,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
 
     def test_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
 
     def setup(self, stage=None):
         if self.censored:
@@ -102,11 +102,18 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
                 torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test),
                 torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true)
             )
+            self.test_dataset = CensoredSpatialDataset(
+                torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test),
+                torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true)
+            )
         else:
             self.train_dataset = TensorDataset(
                 torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train)
             )
             self.val_dataset = TensorDataset(
+                torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test)
+            )
+            self.test_dataset = TensorDataset(
                 torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test)
             )
 
