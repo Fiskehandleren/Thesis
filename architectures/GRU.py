@@ -5,8 +5,6 @@ from torch import optim
 from torch import sqrt
 import numpy as np
 import argparse 
-import torch
-import wandb
 
 
 class GRU(pl.LightningModule):
@@ -47,11 +45,6 @@ class GRU(pl.LightningModule):
         self.test_y_hat = np.empty(0)
 
     def forward(self, x):
-        batch_size = x.shape[0]
-        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).requires_grad_()
-        c0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).requires_grad_()
-        
-        #_, (hn, _) = self.gru(x, (h0, c0))
         _, hn = self.gru(x)
         out = self.linear(hn[-1]).flatten()  # First dim of Hn is num_layers, which is set to 1 above.
 
@@ -93,7 +86,7 @@ class GRU(pl.LightningModule):
     
     def validation_step(self, batch, batch_idx):
         loss_metrics, _, _ = self._get_preds_loss_metrics(batch, "val")
-        self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        #self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["val_loss"]
     
     def test_step(self, batch, batch_idx):
@@ -104,6 +97,9 @@ class GRU(pl.LightningModule):
 
         return loss_metrics["test_loss"]
     
+    def training_epoch_end(self, outputs) -> None:
+        loss = np.mean([output['loss'].cpu().numpy() for output in outputs])
+        self.log('train_loss', loss, on_epoch=True, on_step=False, prog_bar=True)
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
@@ -116,108 +112,3 @@ class GRU(pl.LightningModule):
         parser.add_argument("--num_layers", type=int, default=1)
         parser.add_argument("--output_dim", type=int, default=1)
         return parser
-
-
-'''
-    def training_step(self, batch, batch_idx):
-        # Run forward calculation
-        if self.censored:
-            x, y, tau, y_true = batch
-        else:
-            x, y = batch
-
-        y_predict = self(x).view(-1)
-
-        # Compute loss.
-        if self.censored:
-            loss = self._loss_fn(y_predict, y, tau)
-            loss_uncen = nn.PoissonNLLLoss(log_input=False)
-            loss_true = loss_uncen(y_predict, y_true)
-
-            mse = F.mse_loss(y_predict, y_true)
-            mae = F.l1_loss(y_predict, y_true)  
-        else:
-            loss = self._loss_fn(y_predict, y)
-            loss_true = loss
-            mse = F.mse_loss(y_predict, y)
-            mae = F.l1_loss(y_predict, y)  
-
-        metrics = {
-            "train_loss": loss,
-            "train_loss_true": loss_true,
-            "train_mse": mse,
-            "train_rmse": sqrt(mse),
-            "train_mae": mae
-        }
-
-        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
-        return loss
-    
-    def validation_step(self, batch, batch_idx):
-        if self.censored:
-            x, y, tau, y_true = batch
-        else:
-            x, y = batch
-
-        y_predict = self(x).view(-1)
-
-        # Compute loss.
-        if self.censored:
-            loss = self._loss_fn(y_predict, y, tau)
-            loss_uncen = nn.PoissonNLLLoss(log_input=False)
-            loss_true = loss_uncen(y_predict, y_true)
-            mse = F.mse_loss(y_predict, y_true)
-            mae = F.l1_loss(y_predict, y_true)  
-        else:
-            loss = self._loss_fn(y_predict, y)
-            loss_true = loss
-            mse = F.mse_loss(y_predict, y)
-            mae = F.l1_loss(y_predict, y)  
-
-        metrics = {
-            "val_loss": loss,
-            "val_loss_true": loss_true,
-            "val_rmse": sqrt(mse),
-            "val_mse": mse,
-            "val_mae": mae
-        }
-        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
-        return loss
-    
-
-    def test_step(self, batch, batch_idx):
-        if self.censored:
-            x, y, tau, y_true = batch
-        else:
-            x, y = batch
-
-        y_predict = self(x).view(-1)
-
-        # Compute loss.
-        if self.censored:
-            loss = self._loss_fn(y_predict, y, tau)
-            loss_uncen = nn.PoissonNLLLoss(log_input=False)
-            loss_true = loss_uncen(y_predict, y_true)
-            mse = F.mse_loss(y_predict, y_true)
-            mae = F.l1_loss(y_predict, y_true)  
-        else:
-            loss = self._loss_fn(y_predict, y)
-            loss_true = loss
-            mse = F.mse_loss(y_predict, y)
-            mae = F.l1_loss(y_predict, y)  
-
-        metrics = {
-            "test_loss": loss,
-            "test_loss_true": loss_true,
-            "test_mse": mse,
-            "test_rmse": sqrt(mse),
-            "test_mae": mae
-        }
-
-        self.log_dict(metrics, on_epoch=True, on_step=False, prog_bar=True)
-        
-        self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
-        self.test_y_hat = np.concatenate((self.test_y_hat, y_predict.cpu().detach().numpy()))
-
-        return loss
-'''
