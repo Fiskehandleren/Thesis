@@ -3,5 +3,6 @@ from architectures.TGCN import TGCN
 from architectures.GRU import GRU
 from architectures.LSTM import LSTM
 from architectures.ARNet import ARNet
+from architectures.ATGCN import ATGCN
 
-__all__ = ["AR", "GRU", "LSTM", "TGCN", "ARNet"]
+__all__ = ["AR", "GRU", "LSTM", "TGCN", "ARNet", "ATGCN"]

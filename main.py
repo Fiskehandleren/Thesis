@@ -11,7 +11,7 @@ import torch
 import datasets
 import architectures
 from utils.losses import get_loss
-from architectures import AR, TGCN, LSTM, GRU, ARNet
+from architectures import AR, TGCN, LSTM, GRU, ARNet, ATGCN
 
 def get_model(args, dm):
     model = None
@@ -21,6 +21,10 @@ def get_model(args, dm):
         if args.censored:
             assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
         model = TGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[2], loss_fn = loss_fn, **vars(args))
+    elif args.model_name == "ATGCN":
+        if args.censored:
+            assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
+        model = ATGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[2], loss_fn = loss_fn, **vars(args))
     elif args.model_name == "AR":
         assert not args.covariates, "AR models cannot include covariates"
         model = AR(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
@@ -40,7 +44,7 @@ if __name__ == "__main__":
     parser = Trainer.add_argparse_args(parser)
 
     parser.add_argument("--model_name", type=str, help="The name of the model", 
-        choices=("AR", "ARNet", "LSTM", "TGCN", "GRU"), required=True)
+        choices=("AR", "ARNet", "LSTM", "TGCN", "GRU", "ATGCN"), required=True)
     
     parser.add_argument("--dataloader", type=str, help="Name of dataloader", choices=("EVChargersDatasetSpatial", "EVChargersDataset"), required = True)
 
@@ -89,9 +93,11 @@ if __name__ == "__main__":
     df_dates = pd.DataFrame(dm.y_dates, columns=['Date'])
     df_true = pd.DataFrame(model.test_y.detach(), columns=dm.cluster_names)
     df_pred = pd.DataFrame(model.test_y_hat.detach(), columns=np.char.add(dm.cluster_names, '_pred'))
-    preds = pd.concat([df_dates, df_true, df_pred], axis=1)
-    preds.to_csv(f"predictions/predictions_{args.model_name}_{args.loss}_{args.hidden_dim}_{args.censor_level}.csv")
+    df_uncensored = pd.DataFrame(model.test_y_true.detach(), columns=np.char.add(dm.cluster_names, '_true'))
 
+    preds = pd.concat([df_dates, df_true, df_pred, df_uncensored], axis=1)
+    preds.to_csv(f"predictions/predictions_{args.model_name}_{args.loss}_{args.hidden_dim}_{args.censor_level}.csv")
+    
     import plotly.express as px
     import plotly.graph_objects as go
     
@@ -102,26 +108,20 @@ if __name__ == "__main__":
         "yaxis_title_font_size": 14})
     )
 
-    #test_index = df_test[df_test['Period'] == TEST_START].index.values[0]
     preds.set_index('Date', inplace=True, drop=True)
-    fig = px.line(preds[dm.test_start:dm.test_end], labels=dict(created_at="Date", value="Sessions"))
-    #fig.add_vline(x=test_index, line_width=4, line_dash="dash")
-    #fig.add_annotation(xref="paper", x=0.85, yref="paper", y=-0.2, text="Test set start", showarrow=False)
+    fig = px.line(preds, labels=dict(created_at="Date", value="Sessions"))
     fig.update_layout(
         template=plot_template, legend=dict(orientation='h', y=1.06, title_text="")
     )
     fig.write_html("test.html")
 
     wandb.log({"matplotlib_to_html": wandb.Html(open("test.html"), inject=False)})
-
-    # trainer.logger.log_table(key='sample', dataframe=preds)
+    wandb.finish()
 
     del model
     del dm
     del trainer
     del preds
-
-    wandb.finish()
     
     gc.collect()
     torch.cuda.empty_cache()

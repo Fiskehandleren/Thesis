@@ -17,7 +17,7 @@ class LSTM(pl.LightningModule):
         censored,
         hidden_dim,
         num_layers: int = 1,
-        learning_rate: float = 1e-3,
+        learning_rate: float = 1e-4,
         weight_decay: float = 1.5e-3,
         feat_max_val: float = 1.0,
         **kwargs
@@ -45,6 +45,7 @@ class LSTM(pl.LightningModule):
         # To save predictions and their true values for visualizations
         self.test_y = np.empty(0)
         self.test_y_hat = np.empty(0)
+        self.test_y_true = np.empty(0)
 
     def forward(self, x):
         batch_size = x.shape[0]
@@ -58,20 +59,22 @@ class LSTM(pl.LightningModule):
 
         #:math:`(\text{num\_layers}, N, H_{out})` containing the
         # final hidden state for each element in the sequence.
-        out = self.linear(hn[0]).flatten()  # First dim of Hn is num_layers, which is set to 1 above.
+        out = self.linear(hn[-1]).flatten()  # First dim of Hn is num_layers, which is set to 1 above.
         # Should we always grab the last layer? [-1] indicese last eleement
 
-        return out.exp()
+        return out.exp()    
     
     def _get_preds_loss_metrics(self, batch, stage):
+        '''
         if self.censored:
             x, y, tau, y_true = batch
         else:
             x, y = batch
-        
+        '''
+        x, y, tau, y_true = batch
         y_hat = self(x).view(-1)
         
-        if self.censored:
+        if self.censored: 
             loss = self._loss_fn(y_hat, y, tau)
             loss_uncen = nn.PoissonNLLLoss(log_input=False)
             loss_true = loss_uncen(y_hat, y_true)
@@ -80,7 +83,7 @@ class LSTM(pl.LightningModule):
             mae = F.l1_loss(y_hat, y_true) 
         else:
             loss = self._loss_fn(y_hat, y)
-            loss_true = loss
+            loss_true = self._loss_fn(y_hat, y_true)
             mse = F.mse_loss(y_hat, y)
             mae = F.l1_loss(y_hat, y)  
 
@@ -90,33 +93,30 @@ class LSTM(pl.LightningModule):
             f"{stage}_mae": mae,
             f"{stage}_rmse": sqrt(mse),
             f"{stage}_mse": mse,
-        }, y, y_hat
+        }, y, y_hat, y_true
     
     def training_step(self, batch, batch_idx):
-        loss_metrics, _, _= self._get_preds_loss_metrics(batch, "train")
-        #self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        loss_metrics, _, _, _= self._get_preds_loss_metrics(batch, "train")
+        self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["train_loss"]
-    
-    def training_epoch_end(self, outputs) -> None:
-        loss = np.mean([output['loss'].cpu().numpy() for output in outputs])
-        self.log('train_loss', loss, on_epoch=True, on_step=False, prog_bar=True)
-
 
     def validation_step(self, batch, batch_idx):
-        loss_metrics, _, _ = self._get_preds_loss_metrics(batch, "val")
+        loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "val")
         self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["val_loss"]
     
     def test_step(self, batch, batch_idx):
-        loss_metrics, y, y_hat = self._get_preds_loss_metrics(batch, "test")
+        loss_metrics, y, y_hat, y_true = self._get_preds_loss_metrics(batch, "test")
         self.log_dict(loss_metrics, on_epoch=True, on_step=False, prog_bar=True)
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
         self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
+        self.test_y_true = np.concatenate((self.test_y_true, y_true.cpu().detach().numpy()))
 
         return loss_metrics["test_loss"]
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
+        #optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
     
     @staticmethod

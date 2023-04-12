@@ -4,3 +4,7 @@
 lightning_logs/
 wandb/
 thesis/
+Thesis/
+gpu-*
+gpu_*
+*.html
