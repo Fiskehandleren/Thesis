@@ -29,4 +29,5 @@
 # -- end of LSF options --
 bash python3 -m wandb agent fiskehandleren/Thesis/h14qkbo0
 
+
 ## bash python3 main.py ....
