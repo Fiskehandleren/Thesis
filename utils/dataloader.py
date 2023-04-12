@@ -303,7 +303,10 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
         val_start = df_test[df_test['Period'] == val_start].index.values[0]
         val_end = df_test[df_test['Period'] == val_end].index.values[0]
 
-
+    print(test_start)
+    print(test_end)
+    print(val_start)
+    print(val_end)
     # Create target variable. We might have more targets if we're running 
     # multivariate models
 
@@ -342,7 +345,7 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
     df_train = df_test.loc[train_start:train_end].copy()
     df_test = df_test.loc[test_start:test_end].copy()
     df_val = df_test.loc[val_start:val_end].copy()
-
+    print(df_val.head())
     features.remove('Period')
 
     #print("Test set fraction:", len(df_test) / len(df_train))
