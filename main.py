@@ -95,9 +95,12 @@ if __name__ == "__main__":
     df_dates = pd.DataFrame(dm.y_dates, columns=['Date'])
     df_true = pd.DataFrame(model.test_y, columns=dm.cluster_names)
     df_pred = pd.DataFrame(model.test_y_hat, columns=np.char.add(dm.cluster_names, '_pred'))
-    preds = pd.concat([df_dates, df_true, df_pred], axis=1)
-    preds.to_csv(f"predictions/predictions_{args.model_name}_{args.loss}_{args.hidden_dim}_{args.censor_level}.csv")
+    df_uncensored = pd.DataFrame(model.test_y_true, columns=np.char.add(dm.cluster_names, '_true'))
 
+    preds = pd.concat([df_dates, df_true, df_pred, df_uncensored], axis=1)
+    preds.to_csv(f"predictions/predictions_{args.model_name}_{args.loss}_{args.hidden_dim}_{args.censor_level}.csv")
+    
+    print(preds.head())
     import plotly.express as px
     import plotly.graph_objects as go
     
@@ -110,7 +113,7 @@ if __name__ == "__main__":
 
     #test_index = df_test[df_test['Period'] == TEST_START].index.values[0]
     preds.set_index('Date', inplace=True, drop=True)
-    fig = px.line(preds[dm.test_start:dm.test_end], labels=dict(created_at="Date", value="Sessions"))
+    fig = px.line(preds, labels=dict(created_at="Date", value="Sessions"))
     #fig.add_vline(x=test_index, line_width=4, line_dash="dash")
     #fig.add_annotation(xref="paper", x=0.85, yref="paper", y=-0.2, text="Test set start", showarrow=False)
     fig.update_layout(
@@ -119,5 +122,5 @@ if __name__ == "__main__":
     fig.write_html("test.html")
 
     wandb.log({"matplotlib_to_html": wandb.Html(open("test.html"), inject=False)})
-
+    wandb.finish()
     # trainer.logger.log_table(key='sample', dataframe=preds)

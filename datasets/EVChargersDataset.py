@@ -31,11 +31,15 @@ class EVChargersDataset(pl.LightningDataModule):
         self.censored = censored
         self.censor_level = censor_level
         self.cluster_names =  np.array([cluster])
+        self.tau = cluster + '_TAU'
+        self.true_target = cluster + '_TRUE'
+        '''
         if self.censored:
             self.tau = cluster + '_TAU' 
             self.true_target = cluster + '_TRUE'
         else:
             self.tau = None
+        '''
         self.train_start = train_start
         self.train_end = train_end
         self.test_end = test_end
