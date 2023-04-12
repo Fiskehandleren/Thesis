@@ -21,6 +21,7 @@ class TGCN(LightningModule):
         learning_rate: float = 1e-3,
         weight_decay: float = 1.5e-3,
         censored= False,
+        no_self_loops=False,
         **kwargs
     ):
         super().__init__()
@@ -34,10 +35,11 @@ class TGCN(LightningModule):
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
+        self.no_self_loops = no_self_loops
 
         # We add improved self-loops for each node, to make sure that the nodes are weighing themselves
         # more than their neighbors. `improved=True` means that A_hat = A + 2I, so the diagonal is 3.
-        self.tgcn_cell = TGCN2(node_features, self.hidden_dim, add_self_loops=True, improved=True, batch_size=batch_size)
+        self.tgcn_cell = TGCN2(node_features, self.hidden_dim, add_self_loops=True, improved=not self.no_self_loops, batch_size=batch_size)
         self.linear = torch.nn.Linear(hidden_dim, 1)
 
         # To save predictions and their true values for visualizations
@@ -117,4 +119,5 @@ class TGCN(LightningModule):
         parser.add_argument("--learning_rate", "--lr", type=float, default=1e-3)
         parser.add_argument("--weight_decay", "--wd", type=float, default=1.5e-3)
         parser.add_argument("--hidden_dim", type=int, default=64)
+        parser.add_argument("--no_self_loops", action='store_true', default = False, help= "Censor data at cap. tau")
         return parser
