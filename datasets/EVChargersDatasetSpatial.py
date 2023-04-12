@@ -82,7 +82,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.y_dates = self._feat[test_start_index : test_end_index].Period.to_numpy()
         if self.censored and tau is not None:
             self.tau_train, self.tau_test = tau[train_start_index:train_end_index], tau[train_end_index:]
-            self.y_train_true, self.y_test_true = y_true[train_start_index:train_end_index], tau[train_end_index:]
+            self.y_train_true, self.y_test_true = y_true[train_start_index:train_end_index], y_true[train_end_index:]
 
         _, _, self.edge_index, self.edge_weight = dataloader.get_graph(self.df)
 

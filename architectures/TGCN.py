@@ -6,8 +6,7 @@ from pytorch_lightning import LightningModule
 from torch import sqrt
 import numpy as np
 from torch import nn
-import wandb
-
+import pandas as pd
 
 class TGCN(LightningModule):
     def __init__(
@@ -45,7 +44,7 @@ class TGCN(LightningModule):
         self.test_y = np.empty((0, 8))
         self.test_y_hat = np.empty((0, 8))
 
-        self.save_hyperparameters(ignore=["model", "loss_fn", "edge_index", "edge_weight"])
+        self.save_hyperparameters(ignore=["loss_fn", "edge_index", "edge_weight"])
 
     def forward(self, x, edge_index, edge_weight):
         h = None # Maybe initialize randomly?
@@ -89,7 +88,7 @@ class TGCN(LightningModule):
             f"{stage}_mae": mae,
             f"{stage}_rmse": sqrt(mse),
             f"{stage}_mse": mse,
-        }, y, y_hat
+        }, y if not self.censored else y_true, y_hat
     
     def training_step(self, batch, batch_idx):
         loss_metrics, _, _= self._get_preds_loss_metrics(batch, "train")
