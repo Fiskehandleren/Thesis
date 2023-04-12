@@ -45,6 +45,7 @@ class TGCN(LightningModule):
         # To save predictions and their true values for visualizations
         self.test_y = np.empty((0, 8))
         self.test_y_hat = np.empty((0, 8))
+        self.test_y_true = np.empty((0, 8))
 
         self.save_hyperparameters(ignore=["loss_fn", "edge_index", "edge_weight"])
 
@@ -64,8 +65,9 @@ class TGCN(LightningModule):
             x, y, tau, y_true = batch
         else:
             x, y = batch
+            tau, y_true = None, None
 
-        # Transfer to device
+        # Transfer graph stuff to device
         self.edge_index = self.edge_index.to(self.device)
         self.edge_weight = self.edge_weight.to(self.device)
         
@@ -90,24 +92,25 @@ class TGCN(LightningModule):
             f"{stage}_mae": mae,
             f"{stage}_rmse": sqrt(mse),
             f"{stage}_mse": mse,
-        }, y if not self.censored else y_true, y_hat
+        }, y, y_true, y_hat
     
     def training_step(self, batch, batch_idx):
-        loss_metrics, _, _= self._get_preds_loss_metrics(batch, "train")
+        loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "train")
         self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["train_loss"]
     
     def validation_step(self, batch, batch_idx):
-        loss_metrics, _, _ = self._get_preds_loss_metrics(batch, "val")
+        loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "val")
         self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["val_loss"]
     
     def test_step(self, batch, batch_idx):
-        loss_metrics, y, y_hat = self._get_preds_loss_metrics(batch, "test")
+        loss_metrics, y, y_true, y_hat = self._get_preds_loss_metrics(batch, "test")
         self.log_dict(loss_metrics, on_epoch=True, on_step=False, prog_bar=True)
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
         self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
-
+        if y_true:
+            self.test_y_true = np.concatenate((self.test_y_true, y_true.cpu().detach().numpy()))
         return loss_metrics["test_loss"]
 
     def configure_optimizers(self):
