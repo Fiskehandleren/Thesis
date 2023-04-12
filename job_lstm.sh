@@ -30,4 +30,6 @@
 ## bash python3 -m wandb agent fiskehandleren/Thesis/h14qkbo0
 
 
+
+
 bash python3 main.py --model_name LSTM --cluster WEBSTER --train_start 2019-01-01 --train_end 2019-05-01 --test_end 2019-06-01 --val_end 2019-06-20 --batch_size 32 --max_epochs 2 --dataloader EVChargersDataset --censored --loss CPNLL --accelerator gpu --devices 1
