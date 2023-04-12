@@ -10,7 +10,7 @@ import pandas as pd
 import datasets
 import architectures
 from utils.losses import get_loss
-from architectures import AR, TGCN, LSTM, GRU, ARNet
+from architectures import AR, TGCN, LSTM, GRU, ARNet, ATGCN
 
 def get_model(args, dm):
     model = None
@@ -20,6 +20,10 @@ def get_model(args, dm):
         if args.censored:
             assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
         model = TGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[2], loss_fn = loss_fn, **vars(args))
+    elif args.model_name == "ATGCN":
+        if args.censored:
+            assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
+        model = ATGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[2], loss_fn = loss_fn, **vars(args))
     elif args.model_name == "AR":
         assert not args.covariates, "AR models cannot include covariates"
         model = AR(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
@@ -39,7 +43,7 @@ if __name__ == "__main__":
     parser = Trainer.add_argparse_args(parser)
 
     parser.add_argument("--model_name", type=str, help="The name of the model", 
-        choices=("AR", "ARNet", "LSTM", "TGCN", "GRU"), required=True)
+        choices=("AR", "ARNet", "LSTM", "TGCN", "GRU", "ATGCN"), required=True)
     
     parser.add_argument("--dataloader", type=str, help="Name of dataloader", choices=("EVChargersDatasetSpatial", "EVChargersDataset"), required = True)
 
