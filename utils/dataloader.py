@@ -154,8 +154,9 @@ def get_graph(df, adjecency_threshold_km=3):
 
 
 def get_targets_and_features_tgcn(
-        df, sequence_length=30, forecast_lead=1, 
+        df, node_names, sequence_length=30, forecast_lead=1,
         censored=True, add_month=True, add_hour=True, add_day_of_week=True, add_year=True):
+    num_nodes = len(node_names)
     # By default we already shift the target by 1 timestep, so we only have to shift by additionaly 
     # forecast_leard - 1 steps
     forecast_lead -= 1
@@ -179,9 +180,6 @@ def get_targets_and_features_tgcn(
         df_test['year'] = df.Period.dt.year - df.Period.dt.year.min()
         features.append('year')
     
-    node_names = df_test.columns.difference(['Period'] + features + list(df.filter(like='_TAU').columns) + list(df.filter(like='_TRUE').columns))
-    num_nodes = len(node_names)
-
     # Get initial lagged features by taking the first `sequence_length` observations and treat
     # the `sequence_length`+1 observation as the target
     sessions_array = df_test[node_names].to_numpy(dtype=int)
