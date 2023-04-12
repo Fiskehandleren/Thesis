@@ -3,9 +3,10 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 import wandb
-
+import gc
 import numpy as np
 import pandas as pd
+import torch
 
 import datasets
 import architectures
@@ -73,7 +74,7 @@ if __name__ == "__main__":
     model = get_model(args, dm)
 
     wandb_logger = WandbLogger(project='Thesis', log_model='all')
-    wandb_logger.watch(model)
+    #wandb_logger.watch(model)
 
     checkpoint_callback = ModelCheckpoint(monitor='val_loss', mode='max')
     
@@ -85,12 +86,9 @@ if __name__ == "__main__":
 
     # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
 
-    #if (args.model_name == "TGCN" or args.model_name == "LSTM" or args.model_name == "GRU" or args.model_name == "AR" or args.model_name == "ARNet"):
-    # TODO implement test-step for rest of the models
-
     df_dates = pd.DataFrame(dm.y_dates, columns=['Date'])
-    df_true = pd.DataFrame(model.test_y, columns=dm.cluster_names)
-    df_pred = pd.DataFrame(model.test_y_hat, columns=np.char.add(dm.cluster_names, '_pred'))
+    df_true = pd.DataFrame(model.test_y.detach(), columns=dm.cluster_names)
+    df_pred = pd.DataFrame(model.test_y_hat.detach(), columns=np.char.add(dm.cluster_names, '_pred'))
     preds = pd.concat([df_dates, df_true, df_pred], axis=1)
     preds.to_csv(f"predictions/predictions_{args.model_name}_{args.loss}_{args.hidden_dim}_{args.censor_level}.csv")
 
@@ -117,3 +115,14 @@ if __name__ == "__main__":
     wandb.log({"matplotlib_to_html": wandb.Html(open("test.html"), inject=False)})
 
     # trainer.logger.log_table(key='sample', dataframe=preds)
+
+    del model
+    del dm
+    del trainer
+    del preds
+
+    wandb.finish()
+    
+    gc.collect()
+    torch.cuda.empty_cache()
+
