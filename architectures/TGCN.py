@@ -88,10 +88,10 @@ class TGCN(LightningModule):
 
         return {
             f"{stage}_loss": loss,
-            f"{stage}_loss_true": loss_true,
-            f"{stage}_mae": mae,
-            f"{stage}_rmse": sqrt(mse),
-            f"{stage}_mse": mse,
+            f"{stage}_loss_true": loss_true.item(),
+            f"{stage}_mae": mae.item(),
+            f"{stage}_rmse": sqrt(mse).item(),
+            f"{stage}_mse": mse.item(),
         }, y, y_true, y_hat
     
     def training_step(self, batch, batch_idx):
@@ -109,7 +109,7 @@ class TGCN(LightningModule):
         self.log_dict(loss_metrics, on_epoch=True, on_step=False, prog_bar=True)
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
         self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
-        if y_true:
+        if self.censored:
             self.test_y_true = np.concatenate((self.test_y_true, y_true.cpu().detach().numpy()))
         return loss_metrics["test_loss"]
 
