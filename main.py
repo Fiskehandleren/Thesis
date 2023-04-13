@@ -82,11 +82,12 @@ if __name__ == "__main__":
 
     checkpoint_callback = ModelCheckpoint(monitor='val_loss', mode='max')
     
+    run_name = wandb.run.name
     trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
     trainer.fit(model, dm)
     trainer.test(model, datamodule=dm)
 
-    trainer.save_checkpoint(f"trained_models/best_model_{args.model_name}_{args.loss}.ckpt")
+    trainer.save_checkpoint(f"trained_models/best_model_{run_name}.ckpt")
 
     # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
 
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     df_uncensored = pd.DataFrame(model.test_y_true, columns=np.char.add(dm.cluster_names, '_true'))
 
     preds = pd.concat([df_dates, df_true, df_pred, df_uncensored], axis=1)
-    preds.to_csv(f"predictions/predictions_{args.model_name}_{args.loss}_{args.hidden_dim}_{args.censor_level}.csv")
+    preds.to_csv(f"predictions/predictions_{args.model_name}_{run_name}.csv")
     
     import plotly.express as px
     import plotly.graph_objects as go
