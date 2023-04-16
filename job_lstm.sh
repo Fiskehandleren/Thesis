@@ -5,7 +5,7 @@
 ### check if gpu is available on queue with `nodestat -g <queue_name>`
 #BSUB -q gpuv100
 ### -- set the job Name --
-#BSUB -J tgcn
+#BSUB -J lstm_censored
 ### -- ask for number of cores (default: 1) --
 #BSUB -n 1
 ### -- Select the resources: 1 gpu in exclusive process mode --
