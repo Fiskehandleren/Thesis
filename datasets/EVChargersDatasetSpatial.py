@@ -55,6 +55,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         else:
             self.cluster_names = self._feat.columns[~(self._feat.columns.str.contains('_TAU')) &  ~(self._feat.columns.str.contains('_TRUE'))]
             self.cluster_names = self.cluster_names[(self.cluster_names != 'SHERMAN') & (self.cluster_names != 'Period')]
+            self.cluster_names = self.cluster_names.to_numpy(dtype=str)
 
         # Load node features
         X, y, tau, y_true = dataloader.get_targets_and_features_tgcn(
