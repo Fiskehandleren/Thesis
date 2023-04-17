@@ -1,4 +1,4 @@
-from torch.utils.data import DataLoader, Dataset, TensorDataset
+from torch.utils.data import DataLoader, Dataset
 import pytorch_lightning as pl
 import pandas as pd
 import os
@@ -63,7 +63,6 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             node_names=self.cluster_names,
             sequence_length=self.sequence_length,
             forecast_lead=self.forecast_lead,
-            censored=self.censored,
             add_month=self.coverariates,
             add_day_of_week=self.coverariates,
             add_hour=self.coverariates,
@@ -82,9 +81,9 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.X_test, self.y_test = X[test_start_index : test_end_index], y[test_start_index : test_end_index]
 
         self.y_dates = self._feat[test_start_index : test_end_index].Period.to_numpy()
-        if self.censored and tau is not None:
-            self.tau_train, self.tau_test = tau[train_start_index:train_end_index], tau[train_end_index:]
-            self.y_train_true, self.y_test_true = y_true[train_start_index:train_end_index], y_true[train_end_index:]
+
+        self.tau_train, self.tau_test = tau[train_start_index:train_end_index], tau[train_end_index:]
+        self.y_train_true, self.y_test_true = y_true[train_start_index:train_end_index], y_true[train_end_index:]
 
         _, _, self.edge_index, self.edge_weight = dataloader.get_graph(self.df)
 
@@ -98,30 +97,19 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
     def setup(self, stage=None):
-        if self.censored:
-            self.train_dataset = CensoredSpatialDataset(
-                torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train),
-                torch.FloatTensor(self.tau_train), torch.FloatTensor(self.y_train_true)
-            )
-            self.val_dataset = CensoredSpatialDataset(
-                torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test),
-                torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true)
-            )
-            self.test_dataset = CensoredSpatialDataset(
-                torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test),
-                torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true)
-            )
-        else:
-            self.train_dataset = TensorDataset(
-                torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train)
-            )
-            self.val_dataset = TensorDataset(
-                torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test)
-            )
-            self.test_dataset = TensorDataset(
-                torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test)
-            )
-
+        self.train_dataset = CensoredSpatialDataset(
+            torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train),
+            torch.FloatTensor(self.tau_train), torch.FloatTensor(self.y_train_true)
+        )
+        self.val_dataset = CensoredSpatialDataset(
+            torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test),
+            torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true)
+        )
+        self.test_dataset = CensoredSpatialDataset(
+            torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test),
+            torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true)
+        )
+       
     @staticmethod
     def add_data_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
