@@ -124,6 +124,9 @@ class LSTM(pl.LightningModule):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--hidden_dim", type=int, default=72)
         parser.add_argument("--num_layers", type=int, default=1)
+        parser.add_argument("--learning_rate", "--lr", type=float, default=1e-3)
+        parser.add_argument("--weight_decay", "--wd", type=float, default=1.5e-3)
+        
         #parser.add_argument("--output_dim", type=int, default=1)
         return parser
 

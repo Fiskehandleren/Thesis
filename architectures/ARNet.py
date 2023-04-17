@@ -102,5 +102,7 @@ class ARNet(pl.LightningModule):
     def add_model_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--hidden_dim", type=int, default=72)
+        parser.add_argument("--learning_rate", "--lr", type=float, default=1e-3)
+        parser.add_argument("--weight_decay", "--wd", type=float, default=1.5e-3)
         #parser.add_argument("--output_dim", type=int, default=8)
         return parser
