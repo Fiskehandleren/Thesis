@@ -47,7 +47,7 @@ if __name__ == "__main__":
         choices=("AR", "ARNet", "LSTM", "TGCN", "GRU", "ATGCN"), required=True)
     
     parser.add_argument("--dataloader", type=str, help="Name of dataloader", choices=("EVChargersDatasetSpatial", "EVChargersDataset"), required = True)
-
+    parser.add_argument("--pretrained", type=str, help="Path to pretrained model", default=None)
     parser.add_argument("--loss", type=str, help="Loss function to use", default="PNLL", choices=("MSE", "PNLL", "CPNLL", "CPNLL_TGCN"))
 
     # Common dataset arguments
@@ -76,15 +76,16 @@ if __name__ == "__main__":
     print(args)
     
     model = get_model(args, dm)
-
+    
     wandb_logger = WandbLogger(project='Thesis', log_model='all')
     #wandb_logger.watch(model)
 
-    checkpoint_callback = ModelCheckpoint(monitor='val_loss', mode='max')
+
+    checkpoint_callback = ModelCheckpoint(monitor='val_loss', mode='min', save_last=True)
     
     run_name = wandb.run.name
     trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
-    trainer.fit(model, dm)
+    trainer.fit(model, dm, **vars(args))
     trainer.test(model, datamodule=dm)
 
     trainer.save_checkpoint(f"trained_models/best_model_{run_name}.ckpt")
