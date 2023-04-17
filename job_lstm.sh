@@ -27,8 +27,23 @@
 #BSUB -oo job_out/gpu-%J.out
 #BSUB -eo job_out/gpu_%J.err
 # -- end of LSF options --
-bash python3 -m wandb agent latend-demand/Thesis/f6ufw00l
 
+## CNLL
+## bash python3 -m wandb agent latend-demand/Thesis/f6ufw00l
+## bash python3 main.py --model_name LSTM --cluster WEBSTER --train_start 2019-01-01 --train_end 2019-05-01 --test_end 2019-06-01 --val_end 2019-06-20 --sequence_length 215 --hidden dim 53 --batch_size 16 --max_epochs 10 --learning_rate 1e-2 --weight_decay 0.0721 --dataloader EVChargersDataset --censored --loss CPNLL --censor_level 2 --accelerator gpu --devices 1
+
+## PNLL
+## bash python3 -m wandb agent latend-demand/Thesis/gjwfrtmw
+CLUSTERS=("BRYANT" "MPL" "CAMBRIDGE" "RINCONADA" "HAMILTON" "TED" "HIGH" "WEBSTER")
+## CLUSTERS=("BRYANT")
+n=${#CLUSTERS[@]}
+for i in $(seq 0 "$(($n-1))")
+do
+   bash python3 main.py --model_name LSTM --cluster "${CLUSTERS[$i]}" --train_start 2018-01-01 --train_end 2019-01-01 --val_end 2019-06-30 --test_end 2019-05-02 --sequence_length 215 --hidden_dim 53 --batch_size 16 --max_epochs 10 --learning_rate 1e-2 --weight_decay 0.0721 --dataloader EVChargersDataset --censored --loss CPNLL --censor_level 3 --accelerator gpu --devices 1
+done
+
+
+## bash python3 main.py --model_name LSTM --cluster "{CLUSTERS[$i]}" --train_start 2018-01-01 --train_end 2019-01-01 --val_end 2019-06-30 --test_end 2019-05-02 --sequence_length 215 --hidden_dim 53 --batch_size 16 --max_epochs 10 --learning_rate 1e-2 --weight_decay 0.0721 --dataloader EVChargersDataset --loss PNLL --censor_level 2 --accelerator gpu --devices 1
 
 ## bash python3 main.py --model_name LSTM --cluster WEBSTER --train_start 2019-01-01 --train_end 2019-05-01 --test_end 2019-06-01 --val_end 2019-06-20 --batch_size 32 --max_epochs 4 --dataloader EVChargersDataset --censored --loss CPNLL --censor_level 3 --covariates False --accelerator gpu --devices 1
 ## bash python3 main.py --model_name LSTM --cluster WEBSTER --train_start 2019-01-01 --train_end 2019-05-01 --test_end 2019-06-01 --val_end 2019-06-20 --batch_size 32 --max_epochs 2 --dataloader EVChargersDataset --loss PNLL --censor_level 3 --accelerator gpu --devices 1
