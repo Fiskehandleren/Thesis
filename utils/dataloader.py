@@ -136,7 +136,8 @@ def get_graph(df, adjecency_threshold_km=3):
                 (G.nodes[node_y]['lat'], G.nodes[node_y]['long']),
                 unit=Unit.KILOMETERS)
             # Assume that if nodes are further than adjecency_threshold_km km apart, their usage are not correlated
-            if (dist > adjecency_threshold_km):
+            # TEMP TODO REMOVE THIS
+            if node_x != node_y or dist > adjecency_threshold_km:
                 continue
             # We might have to avoid setting self-connections here, e.g if node_x == node_y then continue
             # This is because the GCN requires A and not A_hat
@@ -145,6 +146,7 @@ def get_graph(df, adjecency_threshold_km=3):
 
     adj = nx.adjacency_matrix(G)
     edge_index, edge_weight = from_scipy_sparse_matrix(adj)
+
     return G, adj, edge_index, edge_weight.float()   
 
 
@@ -185,7 +187,7 @@ def get_targets_and_features_tgcn(
     # Reshape to fit being concatenated with the datetime features
     lag_feats = lag_feats.reshape(-1, num_nodes, 1, sequence_length)
 
-    sessions_array_shifted = df_test[node_names].shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int) # -1 because the next line shifts by 1 by default
+    sessions_array_shifted = df_test[node_names].shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int)
     y = np.array([
         sessions_array_shifted[i + sequence_length + forecast_lead, :].T
         for i in range(sessions_array_shifted.shape[0] - sequence_length - forecast_lead)
