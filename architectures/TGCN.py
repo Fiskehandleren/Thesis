@@ -3,10 +3,8 @@ import torch.optim
 import torch.nn.functional as F
 from torch_geometric_temporal.nn.recurrent import TGCN2
 from pytorch_lightning import LightningModule
-from torch import sqrt
 import numpy as np
-from torch import nn
-import pandas as pd
+from utils.losses import _get_loss_metrics
 
 class TGCN(LightningModule):
     def __init__(
@@ -37,6 +35,8 @@ class TGCN(LightningModule):
         self.weight_decay = weight_decay
         self.no_self_loops = no_self_loops
 
+        TGCN._get_loss_metrics = _get_loss_metrics
+
         # We add improved self-loops for each node, to make sure that the nodes are weighing themselves
         # more than their neighbors. `improved=True` means that A_hat = A + 2I, so the diagonal is 3.
         self.tgcn_cell = TGCN2(node_features, self.hidden_dim, add_self_loops=True, improved=not self.no_self_loops, batch_size=batch_size)
@@ -61,39 +61,18 @@ class TGCN(LightningModule):
         return y.exp(), h
     
     def _get_preds_loss_metrics(self, batch, stage):
-        if self.censored:
-            x, y, tau, y_true = batch
-        else:
-            x, y = batch
-            tau, y_true = None, None
-
+        x = batch[0]
         # Transfer graph stuff to device
         self.edge_index = self.edge_index.to(self.device)
         self.edge_weight = self.edge_weight.to(self.device)
         
+        # Make predictions
         y_hat, _ = self(x, self.edge_index, self.edge_weight)
         y_hat = y_hat.view(-1, x.shape[1])
-        if self.censored:
-            loss = self.loss_fn(y_hat, y, tau)
-            loss_uncen = nn.PoissonNLLLoss(log_input=False)
-            loss_true = loss_uncen(y_hat, y_true)
 
-            mse = F.mse_loss(y_hat, y_true)
-            mae = F.l1_loss(y_hat, y_true) 
-        else:
-            loss = self.loss_fn(y_hat, y)
-            loss_true = loss
-            mse = F.mse_loss(y_hat, y)
-            mae = F.l1_loss(y_hat, y)  
-
-        return {
-            f"{stage}_loss": loss,
-            f"{stage}_loss_true": loss_true.item(),
-            f"{stage}_mae": mae.item(),
-            f"{stage}_rmse": sqrt(mse).item(),
-            f"{stage}_mse": mse.item(),
-        }, y, y_true, y_hat
+        return self._get_loss_metrics(batch, y_hat, stage)
     
+
     def training_step(self, batch, batch_idx):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "train")
         self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)

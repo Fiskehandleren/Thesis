@@ -85,7 +85,7 @@ if __name__ == "__main__":
     
     run_name = wandb.run.name
     trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
-    trainer.fit(model, dm, **vars(args))
+    trainer.fit(model, dm, ckpt_path=args.pretrained)
     trainer.test(model, datamodule=dm)
 
     trainer.save_checkpoint(f"trained_models/best_model_{run_name}.ckpt")
