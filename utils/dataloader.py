@@ -251,6 +251,7 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
 
         ## Remove tau so it isnt and input feature
         features.remove(target + '_TAU')
+        features.remove(target + '_TRUE')
 
     else:
         features = [v for v in df_test.columns if target in v]
@@ -258,8 +259,9 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
         df_test = df_test[features]
 
         print(features)
-        ## Remove tau so it isnt and input feature
+        ## Remove tau and true valueso it isnt an input feature
         features.remove(target + '_TAU')
+        features.remove(target + '_TRUE')
 
     '''
     else:
