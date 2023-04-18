@@ -83,7 +83,7 @@ def cyclical_encode(data: pd.DataFrame, col: str, max_val: int):
     return data, [col + '_sin', col + '_cos']
 
 
-def create_count_data(df, interval_length=30, save=False, cap_recordings = False, censored = False):
+def create_count_data(df, interval_length=30, save=False, cap_recordings = False):
     """ Create counts for number of sessions in each interval. The `Period` defines when the period starts and runs until the next period in the dataframe."""
     df_combined = pd.DataFrame()
     # Cluster "SHERMAN" has no data before late 2021, so we drop it
@@ -111,11 +111,6 @@ def create_count_data(df, interval_length=30, save=False, cap_recordings = False
 
     if cap_recordings == True:
         raise NotImplementedError("Capping recordings is not implemented yet")
-
-    if censored == True:
-        df_pivot_reduced['CensoredSessions'] = np.zeros(len(df_pivot_reduced))
-        df_pivot_reduced['CensoredSessions'][df_pivot_reduced['Sessions'] >= 4] = df_pivot_reduced['Sessions']-2
-        df_pivot_reduced.to_csv(f'charging_session_count_{interval_length}_censored.csv')
 
     if save:
         df_pivot_reduced.to_csv(f'charging_session_count_{interval_length}.csv')
@@ -154,8 +149,7 @@ def get_graph(df, adjecency_threshold_km=3):
 
 
 def get_targets_and_features_tgcn(
-        df, node_names, sequence_length=30, forecast_lead=1,
-        censored=True, add_month=True, add_hour=True, add_day_of_week=True, add_year=True):
+        df, node_names, sequence_length=30, forecast_lead=1, add_month=True, add_hour=True, add_day_of_week=True, add_year=True):
     num_nodes = len(node_names)
     # By default we already shift the target by 1 timestep, so we only have to shift by additionaly 
     # forecast_leard - 1 steps
@@ -207,22 +201,17 @@ def get_targets_and_features_tgcn(
     # period is the same across all nodes
     times = times.repeat(num_nodes, axis=1)
 
-    if censored:
-        _tau = df_test.filter(like='_TAU').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int)
-        tau = np.array([
-            _tau[i + sequence_length + forecast_lead, :].T
-            for i in range(_tau.shape[0] - sequence_length - forecast_lead)
-        ])
-        _y_true = df_test.filter(like='_TRUE').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int)
-        y_true = np.array([
-            _y_true[i + sequence_length + forecast_lead, :].T
-            for i in range(_y_true.shape[0] - sequence_length - forecast_lead)
-        ])
+    _tau = df_test.filter(like='_TAU').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int)
+    tau = np.array([
+        _tau[i + sequence_length + forecast_lead, :].T
+        for i in range(_tau.shape[0] - sequence_length - forecast_lead)
+    ])
+    _y_true = df_test.filter(like='_TRUE').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int)
+    y_true = np.array([
+        _y_true[i + sequence_length + forecast_lead, :].T
+        for i in range(_y_true.shape[0] - sequence_length - forecast_lead)
+    ])
 
-    else:
-        tau = None
-        y_true = None
-    
     # The `feat` matrix will go from (time_length, nodes, lags) to (time_length, nodes, number of features, lags)
     # We repeat the date-specific features 8 times because we have 8 nodes. 
     X = np.concatenate((lag_feats, times), axis=2).astype(np.float16)
@@ -262,6 +251,7 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
 
         ## Remove tau so it isnt and input feature
         features.remove(target + '_TAU')
+        features.remove(target + '_TRUE')
 
     else:
         features = [v for v in df_test.columns if target in v]
@@ -269,8 +259,9 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
         df_test = df_test[features]
 
         print(features)
-        ## Remove tau so it isnt and input feature
+        ## Remove tau and true valueso it isnt an input feature
         features.remove(target + '_TAU')
+        features.remove(target + '_TRUE')
 
     '''
     else:
