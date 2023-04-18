@@ -35,7 +35,6 @@
 ## PNLL
 ## bash python3 -m wandb agent latend-demand/Thesis/gjwfrtmw
 CLUSTERS=("BRYANT" "MPL" "CAMBRIDGE" "RINCONADA" "HAMILTON" "TED" "HIGH" "WEBSTER")
-## CLUSTERS=("BRYANT")
 n=${#CLUSTERS[@]}
 for i in $(seq 0 "$(($n-1))")
 do
