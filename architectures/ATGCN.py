@@ -69,27 +69,24 @@ class ATGCN(LightningModule):
         return self._get_loss_metrics(batch, y_hat, stage)
     
     def training_step(self, batch, batch_idx):
-        loss_metrics, _, _= self._get_preds_loss_metrics(batch, "train")
-        #self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "train")
+        self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["train_loss"]
     
     def validation_step(self, batch, batch_idx):
-        loss_metrics, _, _ = self._get_preds_loss_metrics(batch, "val")
+        loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "val")
         self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["val_loss"]
     
     def test_step(self, batch, batch_idx):
-        loss_metrics, y, y_hat = self._get_preds_loss_metrics(batch, "test")
+        loss_metrics, y, y_true, y_hat = self._get_preds_loss_metrics(batch, "test")
         self.log_dict(loss_metrics, on_epoch=True, on_step=False, prog_bar=True)
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
         self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
-
+        if self.censored:
+            self.test_y_true = np.concatenate((self.test_y_true, y_true.cpu().detach().numpy()))
         return loss_metrics["test_loss"]
     
-    def training_epoch_end(self, outputs) -> None:
-        loss = np.mean([output['loss'].cpu().numpy() for output in outputs])
-        self.log('train_loss', loss, on_epoch=True, on_step=False, prog_bar=True)
-
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
 
@@ -99,4 +96,5 @@ class ATGCN(LightningModule):
         parser.add_argument("--learning_rate", "--lr", type=float, default=1e-3)
         parser.add_argument("--weight_decay", "--wd", type=float, default=1.5e-3)
         parser.add_argument("--hidden_dim", type=int, default=64)
+        parser.add_argument("--no_self_loops", action='store_true', default = False, help= "Censor data at cap. tau")
         return parser
