@@ -49,19 +49,18 @@ class LSTM(pl.LightningModule):
 
     def forward(self, x):
         batch_size = x.shape[0]
-        # If no h0 and c0 is given to the model, they're initialized to zeros
-        # These two caused issues so outcommented. Why am I writing in English?
 
+        # If no h0 and c0 is given to the model, they're initialized to zeros
         h0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).requires_grad_()
         c0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).requires_grad_()
         
-        _, (hn, _) = self.lstm(x)
+        out, (h_n, c_n) = self.lstm(x)
 
         #:math:`(\text{num\_layers}, N, H_{out})` containing the
         # final hidden state for each element in the sequence.
-        out = self.linear(hn[-1]).flatten()  # First dim of Hn is num_layers, which is set to 1 above.
+        out = self.linear(h_n[-1]).flatten()  # First dim of Hn is num_layers, which is set to 1 above.
         # Should we always grab the last layer? [-1] indicese last eleement
-
+        
         return out.exp()    
     
     def _get_preds_loss_metrics(self, batch, stage):
@@ -89,10 +88,10 @@ class LSTM(pl.LightningModule):
 
         return {
             f"{stage}_loss": loss,
-            f"{stage}_loss_true": loss_true,
-            f"{stage}_mae": mae,
-            f"{stage}_rmse": sqrt(mse),
-            f"{stage}_mse": mse,
+            f"{stage}_loss_true": loss_true.item(),
+            f"{stage}_mae": mae.item(),
+            f"{stage}_rmse": sqrt(mse).item(),
+            f"{stage}_mse": mse.item(),
         }, y, y_hat, y_true
     
     def training_step(self, batch, batch_idx):

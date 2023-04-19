@@ -1,5 +1,7 @@
 import torch
 from torch import nn
+from torch import sqrt
+import torch.nn.functional as F
 
 def get_loss(loss):
     if loss == "MSE":
@@ -40,3 +42,32 @@ def censored_poisson_negative_log_likelihood(y_predict, y, C):
     d_t = (C > y).int()
 
     return -torch.sum((d_t * pois.log_prob(y)) + ((1-d_t) * (torch.log(poiss_cdf))))
+
+
+def _get_loss_metrics(self, batch, y_hat, stage):
+    if self.censored:
+        _, y, tau, y_true = batch
+    else:
+        _, y = batch
+        tau, y_true = None, None
+
+    if self.censored:
+        loss = self.loss_fn(y_hat, y, tau)
+        loss_uncen = nn.PoissonNLLLoss(log_input=False)
+        loss_true = loss_uncen(y_hat, y_true)
+
+        mse = F.mse_loss(y_hat, y_true)
+        mae = F.l1_loss(y_hat, y_true) 
+    else:
+        loss = self.loss_fn(y_hat, y)
+        loss_true = loss
+        mse = F.mse_loss(y_hat, y)
+        mae = F.l1_loss(y_hat, y)  
+
+    return {
+        f"{stage}_loss": loss,
+        f"{stage}_loss_true": loss_true.item(),
+        f"{stage}_mae": mae.item(),
+        f"{stage}_rmse": sqrt(mse).item(),
+        f"{stage}_mse": mse.item(),
+    }, y, y_true, y_hat
