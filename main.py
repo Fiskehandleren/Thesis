@@ -5,23 +5,21 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 import wandb
 import gc
 import numpy as np
-import pandas as pd
 import torch
-    
-
+from os import remove    
 
 import datasets
 import architectures
 from utils.losses import get_loss
-from utils.plotting_functions import generate_prediction_html
+from utils.plotting_functions import generate_prediction_html, generate_prediction_data
 from architectures import AR, TGCN, LSTM, GRU, ARNet, ATGCN
 
 def get_trained_model(args, dm):
     artifact_dir = args.pretrained
     # If we're loading an artifact from wandb, we need to download it first
-    if args.pretrained.contains(":"):
-        run = wandb.init(reinit=True, job_type='predict', )
-        artifact = run.use_artifact('fiskehandleren/Thesis/model-232ybnqc:v1', type='model')
+    if ":" in args.pretrained:
+        run = wandb.init(job_type='predict', )
+        artifact = run.use_artifact(artifact_dir, type='model')
         artifact_dir = artifact.download() + '/model.ckpt'
     if args.model_name == 'TGCN':
         model = getattr(architectures, temp_args.model_name).load_from_checkpoint(artifact_dir, edge_index=dm.edge_index, edge_weight=dm.edge_weight, loss_fn = get_loss(args.loss))
@@ -86,7 +84,6 @@ if __name__ == "__main__":
 
 
     temp_args, _ = parser.parse_known_args()
-    #parser = getattr(architectures, temp_args.model_name).add_model_specific_arguments(parser)
     parser = getattr(datasets, temp_args.dataloader).add_data_specific_arguments(parser)
     parser = getattr(architectures, temp_args.model_name).add_model_specific_arguments(parser)
     args = parser.parse_args()
@@ -106,18 +103,23 @@ if __name__ == "__main__":
     
     run_name = wandb.run.name
     trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
+    predictions = None
     if args.mode == "train":
         trainer.fit(model, dm, ckpt_path=args.pretrained)
         trainer.test(model, datamodule=dm)
-
+        # Save local model
         trainer.save_checkpoint(f"trained_models/best_model_{run_name}.ckpt")
-
+        predictions = generate_prediction_data(dm, model)
+        html_path = generate_prediction_html(predictions, run_name)
+        # We might want to save metrics locally
         # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
-
-        wandb.log({"test_predictions": wandb.Html(open(generate_prediction_html(dm, model, run_name, args.model_name)), inject=False)})
+        wandb.log({"test_predictions": wandb.Html(open(html_path), inject=False)})
+        remove(html_path)
     elif args.mode == 'predict':
-        trainer.predict(model, dataloaders=dm.test_dataloader, ckpt_path=args.pretrained)
+        trainer.predict(model, datamodule=dm, return_predictions=False)
+        predictions = generate_prediction_data(dm, model)
 
+    predictions.to_csv(f"predictions/predictions_{args.model_name}_{run_name}.csv")
     wandb.finish()
 
     del model

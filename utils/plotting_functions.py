@@ -7,13 +7,15 @@ import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 import sys 
-
+import os
 sys.path.append('..')
 
 pio.templates.default = "plotly_white"
 
 #plt.style.use('ggplot')
 pd.set_option('display.max_columns', None)
+
+ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
 def plot_time_series(df_in, start_date = 0, end_date = 0, save_figure = False):
@@ -99,7 +101,7 @@ def percentile(n):
     percentile_.__name__ = 'percentile_%s' % n
     return percentile_
 
-def ts_percentile(df, n=2, time_scale = 24, Cluster = 'HAMILTON', value = 'Sessions', percentile_min=10, percentile_max=90, color='r', plot_mean=False, plot_median=True, line_color='k', ax1 = 0, ax2 = 0, plt_axes = axes, **kwargs):
+def ts_percentile(df, n=2, time_scale = 24, Cluster = 'HAMILTON', value = 'Sessions', percentile_min=10, percentile_max=90, color='r', plot_mean=False, plot_median=True, line_color='k', ax1 = 0, ax2 = 0, plt_axes = None, **kwargs):
     x = np.arange(0,time_scale)
 
     # calculate the lower and upper percentile groups, skipping 50 percentile
@@ -130,6 +132,7 @@ def ts_percentile(df, n=2, time_scale = 24, Cluster = 'HAMILTON', value = 'Sessi
         alpha = 1/n
     # fill lower and upper percentile groups
     p = 0
+    fig, axes = plt.subplots(4,2, figsize=(12, 16))
     for p1, p2 in zip(perc1, perc2):
         if (p == n-1):
             label_name = '_nolegend_'
@@ -147,16 +150,16 @@ def ts_percentile(df, n=2, time_scale = 24, Cluster = 'HAMILTON', value = 'Sessi
     return
 
 
-def generate_prediction_html(dm, model, run_name, model_name) -> str:
+def generate_prediction_data(dm, model) -> pd.DataFrame:
     df_dates = pd.DataFrame(dm.y_dates, columns=['Date'])
     df_true = pd.DataFrame(model.test_y, columns=dm.cluster_names)
     df_pred = pd.DataFrame(model.test_y_hat, columns=np.char.add(dm.cluster_names, '_pred'))
     df_uncensored = pd.DataFrame(model.test_y_true, columns=np.char.add(dm.cluster_names, '_true'))
 
-    preds = pd.concat([df_dates, df_true, df_pred, df_uncensored], axis=1)
-    preds.to_csv(f"predictions/predictions_{model_name}_{run_name}.csv")
+    return pd.concat([df_dates, df_true, df_pred, df_uncensored], axis=1)
+    #preds.to_csv(f"predictions/predictions_{model_name}_{run_name}.csv")
 
-    
+def generate_prediction_html(predictions, run_name):
     plot_template = dict(
     layout=go.Layout({
         "font_size": 12,
@@ -164,11 +167,10 @@ def generate_prediction_html(dm, model, run_name, model_name) -> str:
         "yaxis_title_font_size": 14})
     )
 
-    preds.set_index('Date', inplace=True, drop=True)
-    fig = px.line(preds, labels=dict(created_at="Date", value="Sessions"))
+    predictions.set_index('Date', inplace=True, drop=True)
+    fig = px.line(predictions, labels=dict(created_at="Date", value="Sessions"))
     fig.update_layout(
         template=plot_template, legend=dict(orientation='h', y=1.06, title_text="")
     )
     fig.write_html(f"{run_name}.html")
     return f"{run_name}.html"
-
