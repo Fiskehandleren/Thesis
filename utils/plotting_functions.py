@@ -7,8 +7,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 import sys 
+
 sys.path.append('..')
-from utils.dataloader import load_data, create_count_data
 
 pio.templates.default = "plotly_white"
 
@@ -145,3 +145,30 @@ def ts_percentile(df, n=2, time_scale = 24, Cluster = 'HAMILTON', value = 'Sessi
         axes[ax1, ax2].plot(x, df[df['Cluster'] == Cluster].groupby(group_var).median()[value].values, color=line_color)
 
     return
+
+
+def generate_prediction_html(dm, model, run_name, model_name) -> str:
+    df_dates = pd.DataFrame(dm.y_dates, columns=['Date'])
+    df_true = pd.DataFrame(model.test_y, columns=dm.cluster_names)
+    df_pred = pd.DataFrame(model.test_y_hat, columns=np.char.add(dm.cluster_names, '_pred'))
+    df_uncensored = pd.DataFrame(model.test_y_true, columns=np.char.add(dm.cluster_names, '_true'))
+
+    preds = pd.concat([df_dates, df_true, df_pred, df_uncensored], axis=1)
+    preds.to_csv(f"predictions/predictions_{model_name}_{run_name}.csv")
+
+    
+    plot_template = dict(
+    layout=go.Layout({
+        "font_size": 12,
+        "xaxis_title_font_size": 14,
+        "yaxis_title_font_size": 14})
+    )
+
+    preds.set_index('Date', inplace=True, drop=True)
+    fig = px.line(preds, labels=dict(created_at="Date", value="Sessions"))
+    fig.update_layout(
+        template=plot_template, legend=dict(orientation='h', y=1.06, title_text="")
+    )
+    fig.write_html(f"{run_name}.html")
+    return f"{run_name}.html"
+

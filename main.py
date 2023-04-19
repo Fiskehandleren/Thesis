@@ -7,14 +7,34 @@ import gc
 import numpy as np
 import pandas as pd
 import torch
+    
+
 
 import datasets
 import architectures
 from utils.losses import get_loss
+from utils.plotting_functions import generate_prediction_html
 from architectures import AR, TGCN, LSTM, GRU, ARNet, ATGCN
+
+def get_trained_model(args, dm):
+    artifact_dir = args.pretrained
+    # If we're loading an artifact from wandb, we need to download it first
+    if args.pretrained.contains(":"):
+        run = wandb.init(reinit=True, job_type='predict', )
+        artifact = run.use_artifact('fiskehandleren/Thesis/model-232ybnqc:v1', type='model')
+        artifact_dir = artifact.download() + '/model.ckpt'
+    if args.model_name == 'TGCN':
+        model = getattr(architectures, temp_args.model_name).load_from_checkpoint(artifact_dir, edge_index=dm.edge_index, edge_weight=dm.edge_weight, loss_fn = get_loss(args.loss))
+    else:
+        model = getattr(architectures, temp_args.model_name).load_from_checkpoint(artifact_dir, loss_fn = get_loss(args.loss))
+    return model
 
 def get_model(args, dm):
     model = None
+
+    if args.pretrained:
+        return get_trained_model(args, dm)
+
     loss_fn = get_loss(args.loss)
 
     if args.model_name == "TGCN":
@@ -43,6 +63,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser = Trainer.add_argparse_args(parser)
 
+    parser.add_argument("--mode", choices=("train", "test", "predict"), default="train")
     parser.add_argument("--model_name", type=str, help="The name of the model", 
         choices=("AR", "ARNet", "LSTM", "TGCN", "GRU", "ATGCN"), required=True)
     
@@ -77,7 +98,7 @@ if __name__ == "__main__":
     
     model = get_model(args, dm)
     
-    wandb_logger = WandbLogger(project='Thesis', log_model='all')
+    wandb_logger = WandbLogger(project='Thesis', log_model='all', job_type=args.mode)
     #wandb_logger.watch(model)
 
 
@@ -85,39 +106,18 @@ if __name__ == "__main__":
     
     run_name = wandb.run.name
     trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
-    trainer.fit(model, dm, ckpt_path=args.pretrained)
-    trainer.test(model, datamodule=dm)
+    if args.mode == "train":
+        trainer.fit(model, dm, ckpt_path=args.pretrained)
+        trainer.test(model, datamodule=dm)
 
-    trainer.save_checkpoint(f"trained_models/best_model_{run_name}.ckpt")
+        trainer.save_checkpoint(f"trained_models/best_model_{run_name}.ckpt")
 
-    # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
+        # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
 
-    df_dates = pd.DataFrame(dm.y_dates, columns=['Date'])
-    df_true = pd.DataFrame(model.test_y, columns=dm.cluster_names)
-    df_pred = pd.DataFrame(model.test_y_hat, columns=np.char.add(dm.cluster_names, '_pred'))
-    df_uncensored = pd.DataFrame(model.test_y_true, columns=np.char.add(dm.cluster_names, '_true'))
+        wandb.log({"test_predictions": wandb.Html(open(generate_prediction_html(dm, model, run_name, args.model_name)), inject=False)})
+    elif args.mode == 'predict':
+        trainer.predict(model, dataloaders=dm.test_dataloader, ckpt_path=args.pretrained)
 
-    preds = pd.concat([df_dates, df_true, df_pred, df_uncensored], axis=1)
-    preds.to_csv(f"predictions/predictions_{args.model_name}_{run_name}.csv")
-    
-    import plotly.express as px
-    import plotly.graph_objects as go
-    
-    plot_template = dict(
-    layout=go.Layout({
-        "font_size": 12,
-        "xaxis_title_font_size": 14,
-        "yaxis_title_font_size": 14})
-    )
-
-    preds.set_index('Date', inplace=True, drop=True)
-    fig = px.line(preds, labels=dict(created_at="Date", value="Sessions"))
-    fig.update_layout(
-        template=plot_template, legend=dict(orientation='h', y=1.06, title_text="")
-    )
-    fig.write_html("test.html")
-
-    wandb.log({"matplotlib_to_html": wandb.Html(open("test.html"), inject=False)})
     wandb.finish()
 
     del model
@@ -127,4 +127,5 @@ if __name__ == "__main__":
     
     gc.collect()
     torch.cuda.empty_cache()
+
 
