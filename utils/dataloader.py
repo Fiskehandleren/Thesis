@@ -223,7 +223,7 @@ ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_day_of_week=True, add_year=True, train_start='2016-07-01', 
                     train_end='2017-07-01', test_end = '2017-08-01', val_end = '2017-09-01', is_censored = False, multiple_stations = False, 
-                    censorship_level = 1, censor_dynamic):
+                    censorship_level = 1, censor_dynamic = False):
     
     ## Function to load data sets, add covariates and split into training and test set. Has option to censor the input data (arg. is_censored) and 
     ## has option to use several stations to predict demand of one station (arg. multiple_stations)
