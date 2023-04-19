@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch_geometric_temporal.nn.recurrent import TGCN2
 from pytorch_lightning import LightningModule
 import numpy as np
-from utils.losses import _get_loss_metrics
+from utils.losses import get_loss_metrics
 
 class TGCN(LightningModule):
     def __init__(
@@ -35,7 +35,7 @@ class TGCN(LightningModule):
         self.weight_decay = weight_decay
         self.no_self_loops = no_self_loops
 
-        TGCN._get_loss_metrics = _get_loss_metrics
+        TGCN.get_loss_metrics = get_loss_metrics
 
         # We add improved self-loops for each node, to make sure that the nodes are weighing themselves
         # more than their neighbors. `improved=True` means that A_hat = A + 2I, so the diagonal is 3.
@@ -47,7 +47,7 @@ class TGCN(LightningModule):
         self.test_y_hat = np.empty((0, 8))
         self.test_y_true = np.empty((0, 8))
 
-        self.save_hyperparameters(ignore=["loss_fn", "edge_index", "edge_weight"])
+        self.save_hyperparameters(ignore=["edge_index", "edge_weight"])
 
     def forward(self, x, edge_index, edge_weight):
         h = None # Maybe initialize randomly?
@@ -61,17 +61,18 @@ class TGCN(LightningModule):
         return y.exp(), h
     
     def _get_preds_loss_metrics(self, batch, stage):
+        y_hat = self._get_preds(batch)
+        return self.get_loss_metrics(batch, y_hat, stage)
+    
+    def _get_preds(self, batch):
         x = batch[0]
         # Transfer graph stuff to device
         self.edge_index = self.edge_index.to(self.device)
         self.edge_weight = self.edge_weight.to(self.device)
-        
         # Make predictions
         y_hat, _ = self(x, self.edge_index, self.edge_weight)
         y_hat = y_hat.view(-1, x.shape[1])
-
-        return self._get_loss_metrics(batch, y_hat, stage)
-    
+        return y_hat
 
     def training_step(self, batch, batch_idx):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "train")
@@ -82,7 +83,15 @@ class TGCN(LightningModule):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "val")
         self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["val_loss"]
-    
+
+    def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
+        _, y, y_true, y_hat = self._get_preds_loss_metrics(batch, "test")
+        self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
+        self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
+        if self.censored:
+            self.test_y_true = np.concatenate((self.test_y_true, y_true.cpu().detach().numpy()))
+        return y_true
+
     def test_step(self, batch, batch_idx):
         loss_metrics, y, y_true, y_hat = self._get_preds_loss_metrics(batch, "test")
         self.log_dict(loss_metrics, on_epoch=True, on_step=False, prog_bar=True)

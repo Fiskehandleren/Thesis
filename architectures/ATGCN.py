@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch_geometric_temporal.nn.recurrent import A3TGCN2
 from pytorch_lightning import LightningModule
 import numpy as np
-from utils.losses import _get_loss_metrics
+from utils.losses import get_loss_metrics
 
 
 
@@ -37,7 +37,7 @@ class ATGCN(LightningModule):
         self.weight_decay = weight_decay
         self.no_self_loops = no_self_loops
 
-        ATGCN._get_loss_metrics = _get_loss_metrics
+        ATGCN.get_loss_metrics = get_loss_metrics
 
         # We add improved self-loops for each node, to make sure that the nodes are weighing themselves
         # more than their neighbors. `improved=True` means that A_hat = A + 2I, so the diagonal is 3.
@@ -47,6 +47,7 @@ class ATGCN(LightningModule):
         # To save predictions and their true values for visualizations
         self.test_y = np.empty((0, 8))
         self.test_y_hat = np.empty((0, 8))
+        self.test_y_true = np.empty((0, 8))
 
         self.save_hyperparameters(ignore=["model", "loss_fn", "edge_index", "edge_weight"])
 
@@ -66,7 +67,7 @@ class ATGCN(LightningModule):
         y_hat, _ = self(x, self.edge_index, self.edge_weight)
         y_hat = y_hat.view(-1, x.shape[1])
 
-        return self._get_loss_metrics(batch, y_hat, stage)
+        return self.get_loss_metrics(batch, y_hat, stage)
     
     def training_step(self, batch, batch_idx):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "train")

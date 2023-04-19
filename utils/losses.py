@@ -44,12 +44,21 @@ def censored_poisson_negative_log_likelihood(y_predict, y, C):
     return -torch.sum((d_t * pois.log_prob(y)) + ((1-d_t) * (torch.log(poiss_cdf))))
 
 
-def _get_loss_metrics(self, batch, y_hat, stage):
-    if self.censored:
-        _, y, tau, y_true = batch
-    else:
-        _, y = batch
-        tau, y_true = None, None
+def get_loss_metrics(self, batch, y_hat, stage):
+    """
+    Returns a dictionary of loss metrics for the given batch and predictions.
+    args:
+        batch: a batch of data
+        y_hat: the predictions for the batch
+        stage: the stage of the model (train, val, test)
+    
+    returns:
+        loss_metrics: a dictionary of loss metrics
+        y: the true, censored values for the batch
+        y_hat: the predictions for the batch
+        y_true: the true values for the batch
+    """
+    _, y, tau, y_true = batch
 
     if self.censored:
         loss = self.loss_fn(y_hat, y, tau)
