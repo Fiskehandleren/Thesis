@@ -14,6 +14,7 @@ class EVChargersDataset(pl.LightningDataModule):
         forecast_lead: int,
         censored: bool,
         censor_level: int,
+        censor_dynamic: bool,
         cluster: str,
         multiple_stations: bool,
         sequence_length: int,
@@ -31,6 +32,7 @@ class EVChargersDataset(pl.LightningDataModule):
         self.cluster = cluster
         self.censored = censored
         self.censor_level = censor_level
+        self.censor_dynamic = censor_dynamic
         self.cluster_names =  np.array([cluster])
         self.tau = cluster + '_TAU'
         self.true_target = cluster + '_TRUE'
@@ -52,7 +54,8 @@ class EVChargersDataset(pl.LightningDataModule):
                                                                                                 add_hour = self.covariates, add_day_of_week=self.covariates, add_year = self.covariates,
                                                                                                 train_start = self.train_start, train_end = self.train_end, test_end = self.test_end, 
                                                                                                 val_end = self.val_end, is_censored = self.censored,
-                                                                                                multiple_stations=self.multiple_stations, censorship_level = self.censor_level)
+                                                                                                multiple_stations=self.multiple_stations, censorship_level = self.censor_level,
+                                                                                                censor_dynamic = self.censor_dynamic)
 
         self.input_dimensions = len(self.features)
 

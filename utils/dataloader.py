@@ -222,7 +222,8 @@ ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_day_of_week=True, add_year=True, train_start='2016-07-01', 
-                    train_end='2017-07-01', test_end = '2017-08-01', val_end = '2017-09-01', is_censored = False, multiple_stations = False, censorship_level = 1):
+                    train_end='2017-07-01', test_end = '2017-08-01', val_end = '2017-09-01', is_censored = False, multiple_stations = False, 
+                    censorship_level = 1, censor_dynamic):
     
     ## Function to load data sets, add covariates and split into training and test set. Has option to censor the input data (arg. is_censored) and 
     ## has option to use several stations to predict demand of one station (arg. multiple_stations)
@@ -233,7 +234,11 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
     target_var = target
 
     ## if censored:
-    path = os.path.join(ROOT_PATH, f'../data/charging_session_count_1_to_30_censored_{censorship_level}.csv')
+    if censor_dynamic:
+        path  = os.path.join(ROOT_PATH, f'../data/charging_session_count_1_to_30_censored_{censorship_level}_dynamic.csv')
+    else:
+        path = os.path.join(ROOT_PATH, f'../data/charging_session_count_1_to_30_censored_{censorship_level}.csv')
+
     df = pd.read_csv(path, parse_dates=['Period'])
 
     df_test = df.copy()
@@ -249,7 +254,7 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
 
         df_test = df_test[features]
 
-        ## Remove tau so it isnt and input feature
+        ## Remove tau so it isnt an input feature
         features.remove(target + '_TAU')
         features.remove(target + '_TRUE')
 

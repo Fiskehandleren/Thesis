@@ -74,6 +74,7 @@ if __name__ == "__main__":
     parser.add_argument("--covariates", help="Add covariates to the dataset", default=False, action='store_true')
     parser.add_argument("--censored", action='store_true', default = False, help= "Censor data at cap. tau")
     parser.add_argument("--censor_level", default = 1, help = "Choose censorship level")
+    parser.add_argument("--censor_dynamic", default = False, help = "Use dynamic censoring scheme", action='store_true')
     parser.add_argument("--forecast_lead", type=int, default=24, help="How many time steps ahead to predict")
     parser.add_argument("--sequence_length",  type=int, default = 72)
     parser.add_argument("--batch_size", type=int, default=32)

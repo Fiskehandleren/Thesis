@@ -53,9 +53,8 @@ class LSTM(pl.LightningModule):
 
     def forward(self, x):
         batch_size = x.shape[0]
-        # If no h0 and c0 is given to the model, they're initialized to zeros
-        # These two caused issues so outcommented. Why am I writing in English?
 
+        # If no h0 and c0 is given to the model, they're initialized to zeros
         h0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).requires_grad_()
         c0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).requires_grad_()
         
@@ -63,9 +62,9 @@ class LSTM(pl.LightningModule):
 
         #:math:`(\text{num\_layers}, N, H_{out})` containing the
         # final hidden state for each element in the sequence.
-        out = self.linear(h_n[0]).flatten()  # First dim of Hn is num_layers, which is set to 1 above.
+        out = self.linear(h_n[-1]).flatten()  # First dim of Hn is num_layers, which is set to 1 above.
         # Should we always grab the last layer? [-1] indicese last eleement
-
+        
         return out.exp()    
     
     def training_step(self, batch, batch_idx):
