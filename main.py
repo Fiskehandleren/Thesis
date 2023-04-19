@@ -123,7 +123,6 @@ if __name__ == "__main__":
     del model
     del dm
     del trainer
-    del preds
     
     gc.collect()
     torch.cuda.empty_cache()
