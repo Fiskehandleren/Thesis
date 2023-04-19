@@ -10,6 +10,12 @@ python main.py --model_name TemporalGCN --train_start 2019-01-01 --train_end 201
 python main.py --model_name AR --train_start 2019-01-01 --train_end 2019-05-01 --test_start 2020-05-02 --batch_size 32 --max_epochs 10 --dataloader EVChargersDataset --test_end 2020-05-30 --censored --loss CPNLL
 ```
 
+## Predict
+`--pretrained` takes either a model path from Wandb or a local path to a model checkpoint. When running `--mode predict` you can pass the config of the dataset you want to model to run on. Here the sequence length and forecast lead should match the model. The model will predict on the test period.
+```bash 
+python main.py --mode predict --pretrained fiskehandleren/Thesis/model-232ybnqc:v1 --model_name TGCN --train_start 2018-01-01 --train_end 2019-01-01 --test_end 2019-05-02 --val_end 2019-06-30 --covariates --batch_size 32  --dataloader EVChargersDatasetSpatial --loss CPNLL --forecast_lead 1 --censor_level 2
+```
+
 
 ## Note on censored datasets:
 ``` charging_session_count_1_to_30_censored_1.csv: observations capped at value 1
