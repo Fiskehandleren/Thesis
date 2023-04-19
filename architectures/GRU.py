@@ -1,11 +1,10 @@
 from torch import nn
 import pytorch_lightning as pl
-import torch.nn.functional as F
 from torch import optim
-from torch import sqrt
 import numpy as np
 import argparse 
 
+from utils.losses import get_loss_metrics
 
 class GRU(pl.LightningModule):
     def __init__(
@@ -25,7 +24,7 @@ class GRU(pl.LightningModule):
         self.save_hyperparameters()
         self.num_layers = num_layers
         self.censored = censored
-        self._loss_fn = loss_fn
+        self.loss_fn = loss_fn
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.feat_max_val = feat_max_val
@@ -37,12 +36,13 @@ class GRU(pl.LightningModule):
             batch_first=True,
             num_layers=self.num_layers
         )
-
+        GRU.get_loss_metrics = get_loss_metrics
         self.linear = nn.Linear(in_features=hidden_dim, out_features=output_dim)
         
         # To save predictions and their true values for visualizations
         self.test_y = np.empty(0)
         self.test_y_hat = np.empty(0)
+        self.test_y_true = np.empty(0)
 
     def forward(self, x):
         _, hn = self.gru(x)
@@ -50,50 +50,30 @@ class GRU(pl.LightningModule):
 
         return out.exp()
 
+    def _get_preds(self, batch):
+        x = batch[0]
+        return self(x).view(-1)
+    
     def _get_preds_loss_metrics(self, batch, stage):
-        if self.censored:
-            x, y, tau, y_true = batch
-        else:
-            x, y = batch
-        
-        y_hat = self(x).view(-1)
-        
-        if self.censored:
-            loss = self._loss_fn(y_hat, y, tau)
-            loss_uncen = nn.PoissonNLLLoss(log_input=False)
-            loss_true = loss_uncen(y_hat, y_true)
-
-            mse = F.mse_loss(y_hat, y_true)
-            mae = F.l1_loss(y_hat, y_true) 
-        else:
-            loss = self._loss_fn(y_hat, y)
-            loss_true = loss
-            mse = F.mse_loss(y_hat, y)
-            mae = F.l1_loss(y_hat, y)  
-
-        return {
-            f"{stage}_loss": loss,
-            f"{stage}_loss_true": loss_true,
-            f"{stage}_mae": mae,
-            f"{stage}_rmse": sqrt(mse),
-            f"{stage}_mse": mse,
-        }, y, y_hat
+        y_hat = self._get_preds(batch)
+        return self.get_loss_metrics(batch, y_hat, stage)
     
     def training_step(self, batch, batch_idx):
-        loss_metrics, _, _= self._get_preds_loss_metrics(batch, "train")
+        loss_metrics, _, _, _= self._get_preds_loss_metrics(batch, "train")
         #self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["train_loss"]
     
     def validation_step(self, batch, batch_idx):
-        loss_metrics, _, _ = self._get_preds_loss_metrics(batch, "val")
+        loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "val")
         #self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["val_loss"]
     
     def test_step(self, batch, batch_idx):
-        loss_metrics, y, y_hat = self._get_preds_loss_metrics(batch, "test")
+        loss_metrics, y, y_hat, y_true = self._get_preds_loss_metrics(batch, "test")
         self.log_dict(loss_metrics, on_epoch=True, on_step=False, prog_bar=True)
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
         self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
+        self.test_y_true = np.concatenate((self.test_y_true, y_true.cpu().detach().numpy()))
 
         return loss_metrics["test_loss"]
     

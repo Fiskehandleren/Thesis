@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch_geometric_temporal.nn.recurrent import TGCN2
 from pytorch_lightning import LightningModule
 import numpy as np
-from utils.losses import _get_loss_metrics
+from utils.losses import get_loss_metrics
 
 class TGCN(LightningModule):
     def __init__(
@@ -35,7 +35,7 @@ class TGCN(LightningModule):
         self.weight_decay = weight_decay
         self.no_self_loops = no_self_loops
 
-        TGCN._get_loss_metrics = _get_loss_metrics
+        TGCN.get_loss_metrics = get_loss_metrics
 
         # We add improved self-loops for each node, to make sure that the nodes are weighing themselves
         # more than their neighbors. `improved=True` means that A_hat = A + 2I, so the diagonal is 3.
@@ -47,7 +47,7 @@ class TGCN(LightningModule):
         self.test_y_hat = np.empty((0, 8))
         self.test_y_true = np.empty((0, 8))
 
-        self.save_hyperparameters(ignore=["loss_fn", "edge_index", "edge_weight"])
+        self.save_hyperparameters(ignore=["edge_index", "edge_weight"])
 
     def forward(self, x, edge_index, edge_weight):
         h = None # Maybe initialize randomly?
@@ -62,7 +62,7 @@ class TGCN(LightningModule):
     
     def _get_preds_loss_metrics(self, batch, stage):
         y_hat = self._get_preds(batch)
-        return self._get_loss_metrics(batch, y_hat, stage)
+        return self.get_loss_metrics(batch, y_hat, stage)
     
     def _get_preds(self, batch):
         x = batch[0]

@@ -10,13 +10,12 @@ import sys
 import os
 sys.path.append('..')
 
-pio.templates.default = "plotly_white"
+# pio.templates.default = "plotly_white"
 
 #plt.style.use('ggplot')
-pd.set_option('display.max_columns', None)
+# pd.set_option('display.max_columns', None)
 
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
-
 
 def plot_time_series(df_in, start_date = 0, end_date = 0, save_figure = False):
     plot_list = df_in['Cluster'].unique()[:-1]
@@ -172,5 +171,6 @@ def generate_prediction_html(predictions, run_name):
     fig.update_layout(
         template=plot_template, legend=dict(orientation='h', y=1.06, title_text="")
     )
-    fig.write_html(f"{run_name}.html")
+    html_path = os.path.join(ROOT_PATH, f"../{run_name}.html")
+    fig.write_html(html_path)
     return f"{run_name}.html"
