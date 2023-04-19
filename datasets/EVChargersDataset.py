@@ -1,8 +1,9 @@
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 import numpy as np
-import utils.dataloader as dataloader
 import argparse
+
+import utils.dataloader as dataloader
 
 
 class EVChargersDataset(pl.LightningDataModule):
@@ -72,8 +73,9 @@ class EVChargersDataset(pl.LightningDataModule):
                                                  self.tau, self.true_target, self.sequence_length)
         return DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
     
-
-
+    def predict_dataloader(self):
+        return self.test_dataloader()
+    
     '''
     def setup(self, stage=None):
         self.train_dataset = torch.utils.data.TensorDataset(
