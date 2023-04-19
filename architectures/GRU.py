@@ -60,12 +60,12 @@ class GRU(pl.LightningModule):
     
     def training_step(self, batch, batch_idx):
         loss_metrics, _, _, _= self._get_preds_loss_metrics(batch, "train")
-        #self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["train_loss"]
     
     def validation_step(self, batch, batch_idx):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "val")
-        #self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["val_loss"]
     
     def test_step(self, batch, batch_idx):
