@@ -43,6 +43,7 @@ class GRU(pl.LightningModule):
         # To save predictions and their true values for visualizations
         self.test_y = np.empty(0)
         self.test_y_hat = np.empty(0)
+        self.test_y_true = np.empty(0)
 
     def forward(self, x):
         _, hn = self.gru(x)
@@ -51,14 +52,16 @@ class GRU(pl.LightningModule):
         return out.exp()
 
     def _get_preds_loss_metrics(self, batch, stage):
+        '''
         if self.censored:
             x, y, tau, y_true = batch
         else:
             x, y = batch
-        
+        '''
+        x, y, tau, y_true = batch
         y_hat = self(x).view(-1)
         
-        if self.censored:
+        if self.censored: 
             loss = self._loss_fn(y_hat, y, tau)
             loss_uncen = nn.PoissonNLLLoss(log_input=False)
             loss_true = loss_uncen(y_hat, y_true)
@@ -67,42 +70,40 @@ class GRU(pl.LightningModule):
             mae = F.l1_loss(y_hat, y_true) 
         else:
             loss = self._loss_fn(y_hat, y)
-            loss_true = loss
+            loss_true = self._loss_fn(y_hat, y_true)
             mse = F.mse_loss(y_hat, y)
             mae = F.l1_loss(y_hat, y)  
 
         return {
             f"{stage}_loss": loss,
-            f"{stage}_loss_true": loss_true,
-            f"{stage}_mae": mae,
-            f"{stage}_rmse": sqrt(mse),
-            f"{stage}_mse": mse,
-        }, y, y_hat
+            f"{stage}_loss_true": loss_true.item(),
+            f"{stage}_mae": mae.item(),
+            f"{stage}_rmse": sqrt(mse).item(),
+            f"{stage}_mse": mse.item(),
+        }, y, y_hat, y_true
     
     def training_step(self, batch, batch_idx):
-        loss_metrics, _, _= self._get_preds_loss_metrics(batch, "train")
-        #self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        loss_metrics, _, _, _= self._get_preds_loss_metrics(batch, "train")
+        self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["train_loss"]
-    
+
     def validation_step(self, batch, batch_idx):
-        loss_metrics, _, _ = self._get_preds_loss_metrics(batch, "val")
-        #self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "val")
+        self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["val_loss"]
     
     def test_step(self, batch, batch_idx):
-        loss_metrics, y, y_hat = self._get_preds_loss_metrics(batch, "test")
+        loss_metrics, y, y_hat, y_true = self._get_preds_loss_metrics(batch, "test")
         self.log_dict(loss_metrics, on_epoch=True, on_step=False, prog_bar=True)
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
         self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
+        self.test_y_true = np.concatenate((self.test_y_true, y_true.cpu().detach().numpy()))
 
         return loss_metrics["test_loss"]
-    
-    def training_epoch_end(self, outputs) -> None:
-        loss = np.mean([output['loss'].cpu().numpy() for output in outputs])
-        self.log('train_loss', loss, on_epoch=True, on_step=False, prog_bar=True)
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
+        #optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
     
     @staticmethod
@@ -110,5 +111,8 @@ class GRU(pl.LightningModule):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--hidden_dim", type=int, default=72)
         parser.add_argument("--num_layers", type=int, default=1)
-        parser.add_argument("--output_dim", type=int, default=1)
+        parser.add_argument("--learning_rate", "--lr", type=float, default=1e-3)
+        parser.add_argument("--weight_decay", "--wd", type=float, default=1.5e-3)
+        
+        #parser.add_argument("--output_dim", type=int, default=1)
         return parser
