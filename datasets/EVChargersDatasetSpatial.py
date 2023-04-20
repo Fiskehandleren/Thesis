@@ -2,11 +2,12 @@ from torch.utils.data import DataLoader, Dataset
 import pytorch_lightning as pl
 import pandas as pd
 import os
-import utils.dataloader as dataloader
 import argparse
 import numpy as np
 import torch
 import multiprocessing as mp
+
+import utils.dataloader as dataloader
 
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -101,6 +102,9 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
+    def predict_dataloader(self):
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+    
     def setup(self, stage=None):
         self.train_dataset = CensoredSpatialDataset(
             torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train),

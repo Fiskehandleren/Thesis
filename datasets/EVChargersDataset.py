@@ -1,8 +1,9 @@
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 import numpy as np
-import utils.dataloader as dataloader
 import argparse
+
+import utils.dataloader as dataloader
 
 
 class EVChargersDataset(pl.LightningDataModule):
@@ -49,12 +50,11 @@ class EVChargersDataset(pl.LightningDataModule):
         self.multiple_stations = multiple_stations
         self.sequence_length = sequence_length
     
-        self.df_train, self.df_test, self.df_val, self.features, self.target = dataloader.get_datasets_NN(target = self.cluster, forecast_lead = self.forecast_lead, add_month=self.covariates, 
+        self.df_train, self.df_test, self.df_val, self.features, self.target = dataloader.get_datasets_NN(target = self.cluster, forecast_lead = self.forecast_lead, censor_dynamic = self.censor_dynamic, add_month=self.covariates, 
                                                                                                 add_hour = self.covariates, add_day_of_week=self.covariates, add_year = self.covariates,
                                                                                                 train_start = self.train_start, train_end = self.train_end, test_end = self.test_end, 
                                                                                                 val_end = self.val_end, is_censored = self.censored,
-                                                                                                multiple_stations=self.multiple_stations, censorship_level = self.censor_level,
-                                                                                                censor_dynamic = self.censor_dynamic)
+                                                                                                multiple_stations=self.multiple_stations, censorship_level = self.censor_level)
 
         self.input_dimensions = len(self.features)
 
@@ -75,8 +75,9 @@ class EVChargersDataset(pl.LightningDataModule):
                                                  self.tau, self.true_target, self.sequence_length)
         return DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
     
-
-
+    def predict_dataloader(self):
+        return self.test_dataloader()
+    
     '''
     def setup(self, stage=None):
         self.train_dataset = torch.utils.data.TensorDataset(
