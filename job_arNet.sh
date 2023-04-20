@@ -29,11 +29,12 @@
 # -- end of LSF options --
 
 ## CPNLL
-## bash python3 -m wandb agent latend-demand/Thesis/wks1s28c
+bash python3 -m wandb wandb agent latend-demand/Thesis/ry4tql5x
 
 ## PNLL
-bash python3 -m wandb agent latend-demand/Thesis/gjwfrtmw
+## bash python3 -m wandb agent latend-demand/Thesis/gjwfrtmw
 
+## bash python3 main.py --model_name ARNet --cluster WEBSTER --train_start 2019-01-01 --train_end 2019-05-01 --test_end 2019-06-01 --val_end 2019-06-20 --sequence_length 215 --hidden_dim 53 --batch_size 16 --max_epochs 1 --learning_rate 1e-2 --weight_decay 0.0721 --dataloader EVChargersDataset --censored --loss CPNLL --censor_level 2 --censor_dynamic
 
 
 ## bash python3 main.py --model_name ARNet --cluster WEBSTER --train_start 2019-01-01 --train_end 2019-05-01 --test_end 2019-06-01 --val_end 2019-06-20 --batch_size 32 --max_epochs 4 --dataloader EVChargersDataset --censored --loss CPNLL --censor_level 3 --covariates False --accelerator gpu --devices 1
