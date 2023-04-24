@@ -80,7 +80,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         test_end_index = self._feat[self._feat.Period >= self.test_end].index[0]
         val_start_index = self._feat[(self._feat.Period >= self.val_start)].index[0]
         val_end_index = self._feat[(self._feat.Period >= self.val_end)].index[0]
-
+        
         # Grab training data from the start of the dataset to the start of the test set
         self.X_train, self.y_train = X[train_start_index : train_end_index], y[train_start_index : train_end_index]
         self.X_val, self.y_val = X[val_start_index : val_end_index], y[val_start_index : val_end_index]
@@ -106,17 +106,20 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
     
     def setup(self, stage=None):
-        self.train_dataset = CensoredSpatialDataset(
+        self.train_dataset = SequenceSpatialDataset(
             torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train),
-            torch.FloatTensor(self.tau_train), torch.FloatTensor(self.y_train_true)
+            torch.FloatTensor(self.tau_train), torch.FloatTensor(self.y_train_true),
+            self.sequence_length
         )
-        self.val_dataset = CensoredSpatialDataset(
+        self.val_dataset = SequenceSpatialDataset(
             torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test),
-            torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true)
+            torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true),
+            self.sequence_length
         )
-        self.test_dataset = CensoredSpatialDataset(
+        self.test_dataset = SequenceSpatialDataset(
             torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test),
-            torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true)
+            torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true),
+            self.sequence_length
         )
        
     @staticmethod
@@ -125,8 +128,10 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         return parser
 
 
-class CensoredSpatialDataset(Dataset):
-    def __init__(self, X, y, tau, y_true):
+class SequenceSpatialDataset(Dataset):
+    ## Class to retrieve time series elements appropirately with CENSORED target variable y
+    def __init__(self, X, y, tau, y_true, sequence_length):
+        self.sequence_length = sequence_length
         self.X = X
         self.y = y
         self.tau = tau
@@ -136,4 +141,17 @@ class CensoredSpatialDataset(Dataset):
         return self.X.shape[0]
 
     def __getitem__(self, i):
-        return self.X[i], self.y[i], self.tau[i], self.y_true[i]
+        if i >= self.sequence_length - 1:
+            i_start = i - self.sequence_length + 1
+            x = self.X[i_start:(i + 1), :]
+        else:
+            padding = self.X[0].unsqueeze(0).repeat(self.sequence_length - i - 1, 1, 1)
+            x = self.X[0:(i + 1), :]
+            x = torch.cat((padding, x), 0)
+
+        # X will be (time_length, nodes, number of features)
+
+        if self.tau is not None:
+            return x, self.y[i], self.tau[i], self.y_true[i]
+        else:
+            return x, self.y[i]
