@@ -29,7 +29,7 @@
 # -- end of LSF options --
 
 ## CPNLL
-bash python3 -m wandb wandb agent latend-demand/Thesis/ry4tql5x
+## bash python3 -m wandb wandb agent latend-demand/Thesis/ry4tql5x
 
 ## PNLL
 ## bash python3 -m wandb agent latend-demand/Thesis/gjwfrtmw
