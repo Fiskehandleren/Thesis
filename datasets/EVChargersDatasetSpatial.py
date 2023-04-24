@@ -35,10 +35,13 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.forecast_lead = forecast_lead
         self.train_start = train_start
         self.train_end = train_end
-        self.test_start = train_end + " 00:30:00"
-        self.test_end = test_end
-        self.val_start = test_end + " 00:30:00"
+
+        self.val_start = train_end + " 00:30:00"
         self.val_end = val_end
+        
+        self.test_start = val_end + " 00:30:00"
+        self.test_end = test_end
+
         self.censored = censored
         self.censor_dynamic = censor_dynamic
 
