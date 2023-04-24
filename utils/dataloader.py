@@ -267,8 +267,8 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
 '''
    
     ## create end points for dataset
-    test_start = train_end + " 00:30:00"
-    val_start = test_end + " 00:30:00"
+    val_start = train_end + " 00:30:00"
+    test_start =  test_end + " 00:30:00"
 
     if (type(train_end) != int):
         train_start = df_test[df_test['Period'] == train_start].index.values[0]
