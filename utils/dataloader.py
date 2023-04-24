@@ -175,28 +175,27 @@ def get_targets_and_features_tgcn(
         df_test['year'] = df.Period.dt.year - df.Period.dt.year.min()
         features.append('year')
     
-    # Get initial lagged features by taking the first `sequence_length` observations and treat
-    # the `sequence_length`+1 observation as the target
-    sessions_array = df_test[node_names].to_numpy(dtype=int)
+    # Get the sessions for each node so we have [num_nodes, num_timesteps]
+    sessions_array = df_test[node_names].to_numpy(dtype=int).T
 
     # Reshape to fit being concatenated with the datetime features
-    lag_feats = np.expand_dims(sessions_array, axis=-1)
+    lag_feats = np.expand_dims(sessions_array, axis=1)
 
-    y = df_test[node_names].shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int) # -1 because the next line shifts by 1 by default
+    y = df_test[node_names].shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int).T # -1 because the next line shifts by 1 by default
 
-    time_features = df_test[features].to_numpy(dtype=int)
+    time_features = df_test[features].to_numpy(dtype=int).T
 
     # Repeat the time features 8 times because we have 8 nodes, and the 
     # period is the same across all nodes
-    node_time_features =  time_features[:, np.newaxis, :] # Add new 2nd axis, so we can repeat this dim 8 times
-    node_time_features = node_time_features.repeat(num_nodes, axis=1)
+    node_time_features = np.expand_dims(time_features, axis=0) # Add new 1nd axis, so we can repeat this dim 8 times
+    node_time_features = node_time_features.repeat(num_nodes, axis=0)
 
-    tau = df_test.filter(like='_TAU').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int)
+    tau = df_test.filter(like='_TAU').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int).T
 
-    y_true = df_test.filter(like='_TRUE').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int)
+    y_true = df_test.filter(like='_TRUE').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int).T
 
     # We repeat the date-specific features 8 times because we have 8 nodes. 
-    X = np.concatenate((lag_feats, node_time_features), axis=2).astype(np.float16)
+    X = np.concatenate((lag_feats, node_time_features), axis=1).astype(np.float16)
 
     return X, y, tau, y_true
 

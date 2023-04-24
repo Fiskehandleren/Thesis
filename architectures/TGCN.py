@@ -50,6 +50,7 @@ class TGCN(LightningModule):
         self.save_hyperparameters(ignore=["edge_index", "edge_weight"])
 
     def forward(self, x, edge_index, edge_weight):
+        # X is shape (Batch Size, Nodes, Features, Sequence Length)
         h = None # Maybe initialize randomly?
         # Go over each 
         for i in range(self.sequence_length):
