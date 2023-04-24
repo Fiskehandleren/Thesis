@@ -50,6 +50,7 @@ class TGCN(LightningModule):
         self.save_hyperparameters(ignore=["edge_index", "edge_weight"])
 
     def forward(self, x, edge_index, edge_weight):
+        # X is shape (Batch Size, Nodes, Features, Sequence Length)
         h = None # Maybe initialize randomly?
         # Go over each 
         for i in range(self.sequence_length):
@@ -85,7 +86,8 @@ class TGCN(LightningModule):
         return loss_metrics["val_loss"]
 
     def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
-        _, y, y_true, y_hat = self._get_preds_loss_metrics(batch, "test")
+        y_hat = self._get_preds(batch)
+        _, y, _, y_true = batch
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
         self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
         if self.censored:

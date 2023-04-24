@@ -38,11 +38,11 @@ def get_model(args, dm):
     if args.model_name == "TGCN":
         if args.censored:
             assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
-        model = TGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[2], loss_fn = loss_fn, **vars(args))
+        model = TGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[1], loss_fn = loss_fn, **vars(args))
     elif args.model_name == "ATGCN":
         if args.censored:
             assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
-        model = ATGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[2], loss_fn = loss_fn, **vars(args))
+        model = ATGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[1], loss_fn = loss_fn, **vars(args))
     elif args.model_name == "AR":
         assert not args.covariates, "AR models cannot include covariates"
         model = AR(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
