@@ -25,6 +25,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         val_end: str,
         censored: bool,
         censor_level: int,
+        censor_dynamic: bool,
         **kwargs
     ):
         super().__init__()
@@ -39,11 +40,15 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.val_start = test_end + " 00:30:00"
         self.val_end = val_end
         self.censored = censored
+        self.censor_dynamic = censor_dynamic
 
         self.num_workers = mp.cpu_count()
 
         self.df = dataloader.load_data()
-        dataset_name = f'../data/charging_session_count_1_to_30{f"_censored_{censor_level}" if self.censored else ""}.csv'
+        if censor_dynamic:
+            dataset_name = f'../data/charging_session_count_1_to_30{f"_censored_{censor_level}" if self.censored else ""}_dynamic.csv'
+        else: 
+            dataset_name = f'../data/charging_session_count_1_to_30{f"_censored_{censor_level}" if self.censored else ""}.csv'
         if not os.path.exists(os.path.join(ROOT_PATH, dataset_name)):
             print(f'Dataset "{dataset_name}" not found locally. Creating dataset...')
             self._feat = dataloader.create_count_data(self.df, 30, save=True, censored=self.censored)
