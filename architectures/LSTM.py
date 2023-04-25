@@ -39,13 +39,13 @@ class LSTM(pl.LightningModule):
         self.linear = nn.Linear(in_features=self.hidden_dim, out_features=forecast_horizon)
         
         # To save predictions and their true values for visualizations
-        self.test_y = np.empty(0)
-        self.test_y_hat = np.empty(0)
-        self.test_y_true = np.empty(0)
+        self.test_y = np.empty((0, forecast_horizon))
+        self.test_y_hat = np.empty((0, forecast_horizon))
+        self.test_y_true = np.empty((0, forecast_horizon))
 
     def _get_preds(self, batch):
         x = batch[0]
-        return self(x).view(-1)
+        return self(x)
 
     def _get_preds_loss_metrics(self, batch, stage):
         y_hat = self._get_preds(batch)
@@ -62,7 +62,7 @@ class LSTM(pl.LightningModule):
 
         #:math:`(\text{num\_layers}, N, H_{out})` containing the
         # final hidden state for each element in the sequence.
-        out = self.linear(h_n[-1]).flatten()  # First dim of Hn is num_layers, which is set to 1 above.
+        out = self.linear(h_n[-1]) # First dim of Hn is num_layers, which is set to 1 above.
         # Should we always grab the last layer? [-1] indicese last eleement
         
         return out.exp()    

@@ -62,6 +62,7 @@ if __name__ == "__main__":
     parser = Trainer.add_argparse_args(parser)
 
     parser.add_argument("--mode", choices=("train", "test", "predict"), default="train")
+    parser.add_argument("--save_predictions", help="Store predictions after training", default=False, action='store_true')
     parser.add_argument("--model_name", type=str, help="The name of the model", 
         choices=("AR", "ARNet", "LSTM", "TGCN", "GRU", "ATGCN"), required=True)
     
@@ -111,14 +112,15 @@ if __name__ == "__main__":
         trainer.test(model, datamodule=dm)
         # Save local model
         trainer.save_checkpoint(f"trained_models/best_model_{run_name}.ckpt")
-        predictions = generate_prediction_data(dm, model)
-        for tup in predictions:
-            cluster, prediction = tup[0], tup[1]
-            html_path = generate_prediction_html(prediction, run_name)
-        # We might want to save metrics locally
-        # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
-            wandb.log({f"test_predictions_{cluster}": wandb.Html(open(html_path), inject=False)})
-            remove(html_path)
+        if args.save_predictions:
+            predictions = generate_prediction_data(dm, model)
+            for tup in predictions:
+                cluster, prediction = tup[0], tup[1]
+                html_path = generate_prediction_html(prediction, run_name)
+            # We might want to save metrics locally
+            # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
+                wandb.log({f"test_predictions_{cluster}": wandb.Html(open(html_path), inject=False)})
+                remove(html_path)
     elif args.mode == 'predict':
         trainer.predict(model, datamodule=dm, return_predictions=False)
         predictions = generate_prediction_data(dm, model)
