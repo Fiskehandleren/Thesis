@@ -153,7 +153,8 @@ def get_targets_and_features_tgcn(
     num_nodes = len(node_names)
     # By default we already shift the target by 1 timestep, so we only have to shift by additionaly 
     # forecast_leard - 1 steps
-    forecast_lead -= 1
+    
+    # forecast_lead -= 1
 
     df_test = df.copy()
     features, new_cols = [], []
@@ -174,47 +175,27 @@ def get_targets_and_features_tgcn(
         df_test['year'] = df.Period.dt.year - df.Period.dt.year.min()
         features.append('year')
     
-    # Get initial lagged features by taking the first `sequence_length` observations and treat
-    # the `sequence_length`+1 observation as the target
-    sessions_array = df_test[node_names].to_numpy(dtype=int)
+    # Get the sessions for each node so we have [num_nodes, num_timesteps]
+    sessions_array = df_test[node_names].to_numpy(dtype=int).T
 
-    lag_feats = np.array([
-        sessions_array[i : i + sequence_length, :].T
-        for i in range(sessions_array.shape[0] - sequence_length)
-    ])
     # Reshape to fit being concatenated with the datetime features
-    lag_feats = lag_feats.reshape(-1, num_nodes, 1, sequence_length)
+    lag_feats = np.expand_dims(sessions_array, axis=1)
 
-    sessions_array_shifted = df_test[node_names].shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int) # -1 because the next line shifts by 1 by default
-    y = np.array([
-        sessions_array_shifted[i + sequence_length + forecast_lead, :].T
-        for i in range(sessions_array_shifted.shape[0] - sequence_length - forecast_lead)
-    ])
+    y = df_test[node_names].shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int).T # -1 because the next line shifts by 1 by default
 
-    time_features = df_test[features].to_numpy(dtype=int)
+    time_features = df_test[features].to_numpy(dtype=int).T
 
-    times = np.array([
-        [time_features[i : i + sequence_length, :].T]
-        for i in range(time_features.shape[0] - sequence_length)
-    ])
     # Repeat the time features 8 times because we have 8 nodes, and the 
     # period is the same across all nodes
-    times = times.repeat(num_nodes, axis=1)
+    node_time_features = np.expand_dims(time_features, axis=0) # Add new 1nd axis, so we can repeat this dim 8 times
+    node_time_features = node_time_features.repeat(num_nodes, axis=0)
 
-    _tau = df_test.filter(like='_TAU').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int)
-    tau = np.array([
-        _tau[i + sequence_length + forecast_lead, :].T
-        for i in range(_tau.shape[0] - sequence_length - forecast_lead)
-    ])
-    _y_true = df_test.filter(like='_TRUE').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int)
-    y_true = np.array([
-        _y_true[i + sequence_length + forecast_lead, :].T
-        for i in range(_y_true.shape[0] - sequence_length - forecast_lead)
-    ])
+    tau = df_test.filter(like='_TAU').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int).T
 
-    # The `feat` matrix will go from (time_length, nodes, lags) to (time_length, nodes, number of features, lags)
+    y_true = df_test.filter(like='_TRUE').shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int).T
+
     # We repeat the date-specific features 8 times because we have 8 nodes. 
-    X = np.concatenate((lag_feats, times), axis=2).astype(np.float16)
+    X = np.concatenate((lag_feats, node_time_features), axis=1).astype(np.float16)
 
     return X, y, tau, y_true
 
@@ -286,8 +267,8 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
 '''
    
     ## create end points for dataset
-    test_start = train_end + " 00:30:00"
-    val_start = test_end + " 00:30:00"
+    val_start = train_end + " 00:30:00"
+    test_start =  test_end + " 00:30:00"
 
     if (type(train_end) != int):
         train_start = df_test[df_test['Period'] == train_start].index.values[0]
