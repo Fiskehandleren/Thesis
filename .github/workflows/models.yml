@@ -6,8 +6,6 @@ name: Thesis
 on:
   pull_request:
     branches: [ "master" ]
-  push:
-    branches: [ "master" ]
   schedule:
     - cron: '0 6 * * *'
 
@@ -34,5 +32,4 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Test models
       run: |
-        # stop the build if there are Python syntax errors or undefined names
         python test_models.py

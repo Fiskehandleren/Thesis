@@ -53,7 +53,7 @@ class GRU(pl.LightningModule):
 
     def _get_preds_loss_metrics(self, batch, stage):
         x, y, tau, y_true = batch
-        y_hat = self(x)#.view(-1)
+        y_hat = self(x)
         
         if self.censored: 
             loss = self._loss_fn(y_hat, y, tau)
