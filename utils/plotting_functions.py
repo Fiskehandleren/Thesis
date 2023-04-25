@@ -1,4 +1,5 @@
 
+from typing import List, Tuple
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -9,11 +10,6 @@ import plotly.io as pio
 import sys 
 import os
 sys.path.append('..')
-
-# pio.templates.default = "plotly_white"
-
-#plt.style.use('ggplot')
-# pd.set_option('display.max_columns', None)
 
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -148,14 +144,33 @@ def ts_percentile(df, n=2, time_scale = 24, Cluster = 'HAMILTON', value = 'Sessi
 
     return
 
+def generate_column_names(cluster_names, forecast_horizon):
+    column_names = []
+    for i in range(forecast_horizon):
+        for j in range(len(cluster_names)):
+            column_names.append(f'{cluster_names[j]}_{i+1}')
+    return column_names
 
-def generate_prediction_data(dm, model) -> pd.DataFrame:
+def generate_prediction_data(dm, model) -> List[Tuple[str, pd.DataFrame]] :
+    predictions = []
     df_dates = pd.DataFrame(dm.y_dates, columns=['Date'])
-    df_true = pd.DataFrame(model.test_y, columns=dm.cluster_names)
-    df_pred = pd.DataFrame(model.test_y_hat, columns=np.char.add(dm.cluster_names, '_pred'))
-    df_uncensored = pd.DataFrame(model.test_y_true, columns=np.char.add(dm.cluster_names, '_true'))
+    # TGCN case
+    if len(model.test_y.shape) == 3:
+        for i in range(model.test_y.shape[2]): # Go through each cluster
+            col_names = generate_column_names([dm.cluster_names[i]], dm.forecast_horizon)
+            df_true = pd.DataFrame(model.test_y[:,i,:], columns=col_names)
+            df_pred = pd.DataFrame(model.test_y_hat[:,i,:], columns=np.char.add(col_names, '_pred'))
+            df_uncensored = pd.DataFrame(model.test_y_true[:,i,:], columns=np.char.add(col_names, '_true'))
+            predictions.append((dm.cluster_names[i], pd.concat([df_dates, df_true, df_pred, df_uncensored], axis=1)))
+    else:
+        col_names = generate_column_names(dm.cluster_names, dm.forecast_horizon)
+        df_true = pd.DataFrame(model.test_y, columns=col_names)
+        df_pred = pd.DataFrame(model.test_y_hat, columns=np.char.add(col_names, '_pred'))
+        df_uncensored = pd.DataFrame(model.test_y_true, columns=np.char.add(col_names, '_true'))
 
-    return pd.concat([df_dates, df_true, df_pred, df_uncensored], axis=1)
+        predictions.append((dm.cluster_names[0], pd.concat([df_dates, df_true, df_pred, df_uncensored], axis=1)))
+
+    return predictions
     #preds.to_csv(f"predictions/predictions_{model_name}_{run_name}.csv")
 
 def generate_prediction_html(predictions, run_name):
