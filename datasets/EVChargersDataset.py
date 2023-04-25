@@ -12,6 +12,7 @@ class EVChargersDataset(pl.LightningDataModule):
         covariates: bool,
         batch_size: int,
         forecast_lead: int,
+        forecast_horizon: int,
         censored: bool,
         censor_level: int,
         censor_dynamic: bool,
@@ -29,6 +30,7 @@ class EVChargersDataset(pl.LightningDataModule):
         self.covariates = covariates
         self.batch_size = batch_size
         self.forecast_lead = forecast_lead
+        self.forecast_horizon = forecast_horizon
         self.cluster = cluster
         self.censored = censored
         self.censor_level = censor_level
@@ -47,7 +49,7 @@ class EVChargersDataset(pl.LightningDataModule):
         self.df_train, self.df_test, self.df_val, self.features, self.target = dataloader.get_datasets_NN(target = self.cluster, forecast_lead = self.forecast_lead, censor_dynamic = self.censor_dynamic, add_month=self.covariates, 
                                                                                                 add_hour = self.covariates, add_day_of_week=self.covariates, add_year = self.covariates,
                                                                                                 train_start = self.train_start, train_end = self.train_end, test_end = self.test_end, 
-                                                                                                val_end = self.val_end, is_censored = self.censored,
+                                                                                                val_end = self.val_end,
                                                                                                 multiple_stations=self.multiple_stations, censorship_level = self.censor_level)
 
         self.input_dimensions = len(self.features)
@@ -56,32 +58,24 @@ class EVChargersDataset(pl.LightningDataModule):
 
     def train_dataloader(self):
         train_dataset = dataloader.SequenceDataset(self.df_train, self.target, self.features, 
-                                                   self.tau, self.true_target, self.sequence_length)
+                                                   self.tau, self.true_target, self.sequence_length, 
+                                                   forecast_horizon=self.forecast_horizon)
         return DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=8)
 
     def test_dataloader(self):
         test_dataset = dataloader.SequenceDataset(self.df_test, self.target, self.features, 
-                                                  self.tau, self.true_target, self.sequence_length)
+                                                  self.tau, self.true_target, self.sequence_length,
+                                                  forecast_horizon=self.forecast_horizon)
         return DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
     
     def val_dataloader(self):
         val_dataset = dataloader.SequenceDataset(self.df_val, self.target, self.features,
-                                                 self.tau, self.true_target, self.sequence_length)
+                                                 self.tau, self.true_target, self.sequence_length,
+                                                 forecast_horizon=self.forecast_horizon)
         return DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
     
     def predict_dataloader(self):
         return self.test_dataloader()
-    
-    '''
-    def setup(self, stage=None):
-        self.train_dataset = torch.utils.data.TensorDataset(
-            torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train)
-        )
-        self.val_dataset = torch.utils.data.TensorDataset(
-            torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test)
-        )
-    '''
-
 
     @staticmethod
     def add_data_specific_arguments(parent_parser):
