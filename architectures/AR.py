@@ -10,7 +10,7 @@ class AR(pl.LightningModule):
     def __init__(
         self,
         input_dim,
-        output_dim,
+        forecast_horizon,
         loss_fn,
         censored,
         learning_rate: float = 1e-3,
@@ -26,7 +26,7 @@ class AR(pl.LightningModule):
         self.weight_decay = weight_decay
 
         AR.get_loss_metrics = get_loss_metrics
-        self.fc1 = nn.Linear(input_dim, output_dim) 
+        self.fc1 = nn.Linear(input_dim, forecast_horizon) 
 
         # To save predictions and their true values for visualizations
         self.test_y = np.empty(0)

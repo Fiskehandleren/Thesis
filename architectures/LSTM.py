@@ -11,7 +11,7 @@ class LSTM(pl.LightningModule):
     def __init__(
         self,
         input_dim,
-        output_dim, 
+        forecast_horizon, 
         loss_fn,
         censored,
         hidden_dim,
@@ -36,7 +36,7 @@ class LSTM(pl.LightningModule):
             num_layers=self.num_layers
         )
         LSTM.get_loss_metrics = get_loss_metrics
-        self.linear = nn.Linear(in_features=self.hidden_dim, out_features=output_dim)
+        self.linear = nn.Linear(in_features=self.hidden_dim, out_features=forecast_horizon)
         
         # To save predictions and their true values for visualizations
         self.test_y = np.empty(0)

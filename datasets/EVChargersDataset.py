@@ -12,6 +12,7 @@ class EVChargersDataset(pl.LightningDataModule):
         covariates: bool,
         batch_size: int,
         forecast_lead: int,
+        forecast_horizon: int,
         censored: bool,
         censor_level: int,
         censor_dynamic: bool,
@@ -29,6 +30,7 @@ class EVChargersDataset(pl.LightningDataModule):
         self.covariates = covariates
         self.batch_size = batch_size
         self.forecast_lead = forecast_lead
+        self.forecast_horizon = forecast_horizon
         self.cluster = cluster
         self.censored = censored
         self.censor_level = censor_level
@@ -56,17 +58,20 @@ class EVChargersDataset(pl.LightningDataModule):
 
     def train_dataloader(self):
         train_dataset = dataloader.SequenceDataset(self.df_train, self.target, self.features, 
-                                                   self.tau, self.true_target, self.sequence_length)
+                                                   self.tau, self.true_target, self.sequence_length, 
+                                                   forecast_horizon=self.forecast_horizon)
         return DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=8)
 
     def test_dataloader(self):
         test_dataset = dataloader.SequenceDataset(self.df_test, self.target, self.features, 
-                                                  self.tau, self.true_target, self.sequence_length)
+                                                  self.tau, self.true_target, self.sequence_length,
+                                                  forecast_horizon=self.forecast_horizon)
         return DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
     
     def val_dataloader(self):
         val_dataset = dataloader.SequenceDataset(self.df_val, self.target, self.features,
-                                                 self.tau, self.true_target, self.sequence_length)
+                                                 self.tau, self.true_target, self.sequence_length,
+                                                 forecast_horizon=self.forecast_horizon)
         return DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
     
     def predict_dataloader(self):

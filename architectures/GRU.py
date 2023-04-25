@@ -11,7 +11,7 @@ class GRU(pl.LightningModule):
     def __init__(
         self,
         input_dim,
-        output_dim,
+        forecast_horizon,
         hidden_dim,
         loss_fn,
         censored,
@@ -38,7 +38,7 @@ class GRU(pl.LightningModule):
             num_layers=self.num_layers
         )
 
-        self.linear = nn.Linear(in_features=hidden_dim, out_features=output_dim)
+        self.linear = nn.Linear(in_features=hidden_dim, out_features=forecast_horizon)
         
         # To save predictions and their true values for visualizations
         self.test_y = np.empty(0)
@@ -47,13 +47,13 @@ class GRU(pl.LightningModule):
 
     def forward(self, x):
         _, hn = self.gru(x)
-        out = self.linear(hn[-1]).flatten()  # First dim of Hn is num_layers, which is set to 1 above.
+        out = self.linear(hn[-1])#.flatten()  # First dim of Hn is num_layers, which is set to 1 above.
 
         return out.exp()
 
     def _get_preds_loss_metrics(self, batch, stage):
         x, y, tau, y_true = batch
-        y_hat = self(x).view(-1)
+        y_hat = self(x)#.view(-1)
         
         if self.censored: 
             loss = self._loss_fn(y_hat, y, tau)

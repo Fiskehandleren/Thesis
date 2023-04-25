@@ -266,7 +266,7 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
    
     ## create end points for dataset
     val_start = train_end + " 00:30:00"
-    test_start =  test_end + " 00:30:00"
+    test_start =  val_end + " 00:30:00"
 
     if (type(train_end) != int):
         train_start = df_test[df_test['Period'] == train_start].index.values[0]
@@ -294,17 +294,14 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
         df_test['month'] = df.Period.dt.month
         df_test, new_cols = cyclical_encode(df_test, 'month', 12)
         features.extend(new_cols)
-        #features = features + new_cols
     if add_day_of_week:
         df_test['dayofweek'] = df.Period.dt.dayofweek
         df_test, new_cols = cyclical_encode(df_test, 'dayofweek', 7)
         features.extend(new_cols)
-        #features = features + new_cols
     if add_hour:
         df_test['hour'] = df.Period.dt.hour
         df_test, new_cols = cyclical_encode(df_test, 'hour', 24)
         features.extend(new_cols)
-        #features = features + new_cols
     if add_year:
         df_test['year'] = df.Period.dt.year - df.Period.dt.year.min()
         features.append('year')
@@ -323,10 +320,12 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
 
 class SequenceDataset(Dataset):
     ## Class to retrieve time series elements appropirately with CENSORED target variable y
-    def __init__(self, dataframe, target, features, threshold=None, true_target=None, sequence_length=5):
+    def __init__(self, dataframe, target, features, threshold=None, true_target=None, sequence_length=5, forecast_horizon=2):
         self.features = features
         self.target = target
         self.sequence_length = sequence_length
+        self.forecast_horizon = forecast_horizon
+
         self.y = torch.tensor(dataframe[target].values).float()
         self.X = torch.tensor(dataframe[features].values).float()
 
@@ -346,4 +345,26 @@ class SequenceDataset(Dataset):
             x = self.X[0:(i + 1), :]
             x = torch.cat((padding, x), 0)
 
-        return x, self.y[i], self.tau[i], self.y_true[i]
+        y_start = i
+        y_end = y_start + self.forecast_horizon
+
+        if y_end > self.y.shape[0]:
+            pad_length = y_end - self.y.shape[0]
+
+            y_values = self.y[y_start:]
+            y_padding = y_values[-1].repeat(pad_length)
+            y_values = torch.cat((y_values, y_padding))
+
+            tau_values = self.tau[y_start:]
+            tau_padding = tau_values[-1].repeat(pad_length)
+            tau_values = torch.cat((tau_values, tau_padding))
+
+            y_true_values = self.y_true[y_start:]
+            y_true_padding = y_true_values[-1].repeat(pad_length)
+            y_true_values = torch.cat((y_true_values, y_true_padding))
+        else:
+            y_values = self.y[y_start:y_end]
+            tau_values = self.tau[y_start:y_end]
+            y_true_values = self.y_true[y_start:y_end]
+
+        return x, y_values, tau_values, y_true_values
