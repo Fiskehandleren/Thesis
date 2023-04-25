@@ -158,9 +158,9 @@ def generate_prediction_data(dm, model) -> List[Tuple[str, pd.DataFrame]] :
     if len(model.test_y.shape) == 3:
         for i in range(model.test_y.shape[2]): # Go through each cluster
             col_names = generate_column_names([dm.cluster_names[i]], dm.forecast_horizon)
-            df_true = pd.DataFrame(model.test_y[:,:,i], columns=col_names)
-            df_pred = pd.DataFrame(model.test_y_hat[:,:,i], columns=np.char.add(col_names, '_pred'))
-            df_uncensored = pd.DataFrame(model.test_y_true[:,:,i], columns=np.char.add(col_names, '_true'))
+            df_true = pd.DataFrame(model.test_y[:,i,:], columns=col_names)
+            df_pred = pd.DataFrame(model.test_y_hat[:,i,:], columns=np.char.add(col_names, '_pred'))
+            df_uncensored = pd.DataFrame(model.test_y_true[:,i,:], columns=np.char.add(col_names, '_true'))
             predictions.append((dm.cluster_names[i], pd.concat([df_dates, df_true, df_pred, df_uncensored], axis=1)))
     else:
         col_names = generate_column_names(dm.cluster_names, dm.forecast_horizon)
