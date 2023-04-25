@@ -4,7 +4,7 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 import wandb
 import gc
-import numpy as np
+import pandas as pd
 import torch
 from os import remove    
 
@@ -76,6 +76,7 @@ if __name__ == "__main__":
     parser.add_argument("--censor_level", default = 1, help = "Choose censorship level")
     parser.add_argument("--censor_dynamic", default = False, help = "Use dynamic censoring scheme", action='store_true')
     parser.add_argument("--forecast_lead", type=int, default=24, help="How many time steps ahead to predict")
+    parser.add_argument("--forecast_horizon", type=int, default=4, help="How many time steps to predict")
     parser.add_argument("--sequence_length",  type=int, default = 72)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--train_start", type=str, required=True)
@@ -104,7 +105,7 @@ if __name__ == "__main__":
     
     run_name = wandb.run.name
     trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
-    predictions = None
+    predictions = pd.DataFrame()
     if args.mode == "train":
         trainer.fit(model, dm, ckpt_path=args.pretrained)
         trainer.test(model, datamodule=dm)

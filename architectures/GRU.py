@@ -52,12 +52,6 @@ class GRU(pl.LightningModule):
         return out.exp()
 
     def _get_preds_loss_metrics(self, batch, stage):
-        '''
-        if self.censored:
-            x, y, tau, y_true = batch
-        else:
-            x, y = batch
-        '''
         x, y, tau, y_true = batch
         y_hat = self(x).view(-1)
         
@@ -103,7 +97,6 @@ class GRU(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
-        #optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
     
     @staticmethod
