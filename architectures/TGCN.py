@@ -69,10 +69,6 @@ class TGCN(LightningModule):
         self.edge_weight = self.edge_weight.to(self.device)
         # Make predictions
         y_hat, _ = self(x, self.edge_index, self.edge_weight)
-        # If only predicting one step into the future, we can 
-        # remove the extra dimension
-        if y_hat.shape[2] == 1:
-            y_hat = y_hat.view(-1, x.shape[1])
         return y_hat
 
     def training_step(self, batch, batch_idx):
