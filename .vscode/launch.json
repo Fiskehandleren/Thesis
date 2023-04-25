@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "TemporalGCN",
+            "name": "TGCN",
             "type": "python",
             "request": "launch",
             "program": "main.py",
@@ -13,9 +13,39 @@
             "justMyCode": true,
             "args": [
                 "--model_name", "TGCN",
-                "--train_start", "2019-01-01",
-                "--train_end", "2019-05-01",
-                "--test_end", "2019-06-02",
+                "--train_start", "2018-01-01",
+                "--train_end", "2019-01-01",
+                "--val_end", "2019-05-02",
+                "--test_end", "2019-06-30",
+                "--covariates",
+                "--batch_size", "32",
+                "--max_epochs", "1",
+                "--censored",
+                "--hidden_dim", "16",
+                "--dataloader", "EVChargersDatasetSpatial",
+                "--censor_dynamic",
+                "--loss", "CPNLL",
+                "--sequence_length", "10",
+                "--forecast_lead", "1",
+                "--censor_level", "2",
+                "--weight_decay", "0.08891358780672566",
+                "--learning_rate", "0.015698377822432722"
+            ]
+        },
+        {
+            "name": "TemporalGCN_Predict",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--mode", "predict",
+                "--pretrained", "fiskehandleren/Thesis/model-232ybnqc:v1",
+                "--model_name", "TGCN",
+                "--train_start", "2018-01-01",
+                "--train_end", "2019-01-01",
+                "--test_end", "2019-05-02",
                 "--val_end", "2019-06-30",
                 "--covariates",
                 "--batch_size", "64",
@@ -24,8 +54,9 @@
                 "--hidden_dim", "32",
                 "--dataloader", "EVChargersDatasetSpatial",
                 "--loss", "CPNLL",
-                "--forecast_lead", "24",
-                "--censor_level", "2",
+                "--sequence_length", "10",
+                "--forecast_lead", "1",
+                "--censor_level", "2"
             ]
         },
         {
@@ -42,14 +73,65 @@
                 "--test_end", "2019-06-02",
                 "--max_epochs", "1",
                 "--censored",
-                "--forecast_lead", "24",
+                "--forecast_lead", "1",
+                "--forecast_horizon", "4",
+                "--sequence_length", "72",
+                "--cluster", "WEBSTER",
+                "--hidden_dim", "32",
+                "--num_layers", "1",
+                "--dataloader", "EVChargersDataset",
+                "--loss", "CPNLL",
+                "--censor_level", "2"
+            ]
+        },
+        {
+            "name": "AR",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--model_name", "AR",
+                "--train_start", "2018-01-01",
+                "--train_end", "2019-01-01",
+                "--val_end", "2019-05-02",
+                "--test_end", "2019-06-30",
+                "--max_epochs", "1",
+                "--censored",
+                "--forecast_lead", "1",
+                "--forecast_horizon", "4",
+                "--sequence_length", "72",
+                "--cluster", "WEBSTER",
+                "--dataloader", "EVChargersDataset",
+                "--loss", "CPNLL",
+                "--censor_level", "2"
+            ]
+        },
+        {
+            "name": "ARNet",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--model_name", "ARNet",
+                "--train_start", "2018-01-01",
+                "--train_end", "2019-01-01",
+                "--val_end", "2019-05-02",
+                "--test_end", "2019-06-30",
+                "--max_epochs", "1",
+                "--censored",
+                "--forecast_lead", "1",
+                "--forecast_horizon", "4",
                 "--sequence_length", "72",
                 "--cluster", "WEBSTER",
                 "--hidden_dim", "32",
                 "--num_layers", "2",
                 "--dataloader", "EVChargersDataset",
                 "--loss", "CPNLL",
-                "--censor_level", "2",
+                "--censor_level", "2"
             ]
         },
         {
@@ -74,7 +156,7 @@
                 "--hidden_dim", "32",
                 "--num_layers", "1",
                 "--loss", "CPNLL",
-                "--censor_level", "2",
+                "--censor_level", "2"
             ]
         }
     ]

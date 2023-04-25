@@ -27,7 +27,7 @@
 #BSUB -oo job_out/gpu-%J.out
 #BSUB -eo job_out/gpu_%J.err
 # -- end of LSF options --
-bash python3 -m wandb agent fiskehandleren/Thesis/h14qkbo0
+bash python3 -m wandb agent latend-demand/Thesis/af4w4z89
 
 
 ## bash python3 main.py ....
