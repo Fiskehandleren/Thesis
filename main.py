@@ -112,16 +112,20 @@ if __name__ == "__main__":
         # Save local model
         trainer.save_checkpoint(f"trained_models/best_model_{run_name}.ckpt")
         predictions = generate_prediction_data(dm, model)
-        html_path = generate_prediction_html(predictions, run_name)
+        for tup in predictions:
+            cluster, prediction = tup[0], tup[1]
+            html_path = generate_prediction_html(prediction, run_name)
         # We might want to save metrics locally
         # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
-        wandb.log({"test_predictions": wandb.Html(open(html_path), inject=False)})
-        remove(html_path)
+            wandb.log({f"test_predictions_{cluster}": wandb.Html(open(html_path), inject=False)})
+            remove(html_path)
     elif args.mode == 'predict':
         trainer.predict(model, datamodule=dm, return_predictions=False)
         predictions = generate_prediction_data(dm, model)
-
-    predictions.to_csv(f"predictions/predictions_{args.model_name}_{run_name}.csv")
+    
+    for tup in predictions:
+        cluster, prediction = tup[0], tup[1]
+        prediction.to_csv(f"predictions/predictions_{args.model_name}_{cluster}_{run_name}.csv")
     wandb.finish()
 
     del model

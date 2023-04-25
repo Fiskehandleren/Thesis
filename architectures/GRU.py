@@ -41,9 +41,9 @@ class GRU(pl.LightningModule):
         self.linear = nn.Linear(in_features=hidden_dim, out_features=forecast_horizon)
         
         # To save predictions and their true values for visualizations
-        self.test_y = np.empty(0)
-        self.test_y_hat = np.empty(0)
-        self.test_y_true = np.empty(0)
+        self.test_y = np.empty((0, forecast_horizon))
+        self.test_y_hat = np.empty((0, forecast_horizon))
+        self.test_y_true = np.empty((0, forecast_horizon))
 
     def forward(self, x):
         _, hn = self.gru(x)

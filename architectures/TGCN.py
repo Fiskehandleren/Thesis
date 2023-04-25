@@ -41,9 +41,9 @@ class TGCN(LightningModule):
         self.linear = torch.nn.Linear(hidden_dim, forecast_horizon)
 
         # To save predictions and their true values for visualizations
-        self.test_y = np.empty((0, 8))
-        self.test_y_hat = np.empty((0, 8))
-        self.test_y_true = np.empty((0, 8))
+        self.test_y = np.empty((0, 8, forecast_horizon))
+        self.test_y_hat = np.empty((0, 8, forecast_horizon))
+        self.test_y_true = np.empty((0, 8, forecast_horizon))
 
         self.save_hyperparameters(ignore=["edge_index", "edge_weight"])
 
