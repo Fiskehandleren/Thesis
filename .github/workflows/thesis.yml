@@ -30,7 +30,7 @@ jobs:
         pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-1.13.0+cu116.html
         pip install torch-geometric-temporal
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Lint with flake8
+    - name: Test models
       run: |
         # stop the build if there are Python syntax errors or undefined names
         python test_models.py

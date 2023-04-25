@@ -2,7 +2,6 @@ import argparse
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
-import wandb
 import gc
 import pandas as pd
 import torch
@@ -98,13 +97,18 @@ if __name__ == "__main__":
     
     model = get_model(args, dm)
     
-    wandb_logger = WandbLogger(project='Thesis', log_model='all', job_type=args.mode)
+    if args.logger:
+        import wandb
+        wandb_logger = WandbLogger(project='Thesis', log_model='all', job_type=args.mode)
+        run_name = wandb.run.name
+    else:
+        wandb_logger = None
+        run_name = "local"
     #wandb_logger.watch(model)
 
 
     checkpoint_callback = ModelCheckpoint(monitor='val_loss', mode='min', save_last=True)
     
-    run_name = wandb.run.name
     trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
     predictions = pd.DataFrame()
     if args.mode == "train":
@@ -116,11 +120,10 @@ if __name__ == "__main__":
             predictions = generate_prediction_data(dm, model)
             for tup in predictions:
                 cluster, prediction = tup[0], tup[1]
-                html_path = generate_prediction_html(prediction, run_name)
-            # We might want to save metrics locally
-            # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
-                wandb.log({f"test_predictions_{cluster}": wandb.Html(open(html_path), inject=False)})
-                remove(html_path)
+                if args.logger:
+                    html_path = generate_prediction_html(prediction, run_name)
+                    wandb.log({f"test_predictions_{cluster}": wandb.Html(open(html_path), inject=False)})
+                    remove(html_path)
     elif args.mode == 'predict':
         trainer.predict(model, datamodule=dm, return_predictions=False)
         predictions = generate_prediction_data(dm, model)
@@ -128,7 +131,9 @@ if __name__ == "__main__":
     for tup in predictions:
         cluster, prediction = tup[0], tup[1]
         prediction.to_csv(f"predictions/predictions_{args.model_name}_{cluster}_{run_name}.csv")
-    wandb.finish()
+
+    if args.logger:
+        wandb.finish()
 
     del model
     del dm
