@@ -4,7 +4,7 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 import wandb
 import gc
-import numpy as np
+import pandas as pd
 import torch
 from os import remove    
 
@@ -48,11 +48,11 @@ def get_model(args, dm):
         model = AR(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
     elif args.model_name == "ARNet":
         assert not args.covariates, "AR models cannot include covariates"
-        model = ARNet(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
+        model = ARNet(input_dim=args.sequence_length, loss_fn = loss_fn, **vars(args))
     elif args.model_name == "LSTM":
-        model = LSTM(input_dim=dm.input_dimensions, output_dim=1, loss_fn = loss_fn, **vars(args))
+        model = LSTM(input_dim=dm.input_dimensions, loss_fn = loss_fn, **vars(args))
     elif args.model_name == "GRU":
-        model = GRU(input_dim=dm.input_dimensions, output_dim=1, loss_fn = loss_fn, **vars(args))
+        model = GRU(input_dim=dm.input_dimensions, loss_fn = loss_fn, **vars(args))
     else:
         raise ValueError(f"{args.model_name} not implemented yet!")
     return model
@@ -62,6 +62,7 @@ if __name__ == "__main__":
     parser = Trainer.add_argparse_args(parser)
 
     parser.add_argument("--mode", choices=("train", "test", "predict"), default="train")
+    parser.add_argument("--save_predictions", help="Store predictions after training", default=False, action='store_true')
     parser.add_argument("--model_name", type=str, help="The name of the model", 
         choices=("AR", "ARNet", "LSTM", "TGCN", "GRU", "ATGCN"), required=True)
     
@@ -76,6 +77,7 @@ if __name__ == "__main__":
     parser.add_argument("--censor_level", default = 1, help = "Choose censorship level")
     parser.add_argument("--censor_dynamic", default = False, help = "Use dynamic censoring scheme", action='store_true')
     parser.add_argument("--forecast_lead", type=int, default=24, help="How many time steps ahead to predict")
+    parser.add_argument("--forecast_horizon", type=int, default=4, help="How many time steps to predict")
     parser.add_argument("--sequence_length",  type=int, default = 72)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--train_start", type=str, required=True)
@@ -104,23 +106,28 @@ if __name__ == "__main__":
     
     run_name = wandb.run.name
     trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
-    predictions = None
+    predictions = pd.DataFrame()
     if args.mode == "train":
         trainer.fit(model, dm, ckpt_path=args.pretrained)
         trainer.test(model, datamodule=dm)
         # Save local model
         trainer.save_checkpoint(f"trained_models/best_model_{run_name}.ckpt")
-        predictions = generate_prediction_data(dm, model)
-        html_path = generate_prediction_html(predictions, run_name)
-        # We might want to save metrics locally
-        # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
-        wandb.log({"test_predictions": wandb.Html(open(html_path), inject=False)})
-        remove(html_path)
+        if args.save_predictions:
+            predictions = generate_prediction_data(dm, model)
+            for tup in predictions:
+                cluster, prediction = tup[0], tup[1]
+                html_path = generate_prediction_html(prediction, run_name)
+            # We might want to save metrics locally
+            # pd.DataFrame(trainer.callback_metrics).to_csv(f"trained_models/best_model_{args.model_name}_{args.loss}.csv")
+                wandb.log({f"test_predictions_{cluster}": wandb.Html(open(html_path), inject=False)})
+                remove(html_path)
     elif args.mode == 'predict':
         trainer.predict(model, datamodule=dm, return_predictions=False)
         predictions = generate_prediction_data(dm, model)
-
-    predictions.to_csv(f"predictions/predictions_{args.model_name}_{run_name}.csv")
+    
+    for tup in predictions:
+        cluster, prediction = tup[0], tup[1]
+        prediction.to_csv(f"predictions/predictions_{args.model_name}_{cluster}_{run_name}.csv")
     wandb.finish()
 
     del model
