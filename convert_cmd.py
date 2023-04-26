@@ -7,10 +7,15 @@ config = json.loads(config_str)
 def extract_command_line_args(config):
     args = []
     for key, value in config.items():
-        if not isinstance(value, dict) or "desc" not in value or "value" not in value or '_wandb' in key:
+        if not isinstance(value, dict) or "desc" not in value or "value" not in value or '_wandb' in key or 'loss_fn' in key or 'node_features' in key:
             continue
         if value["value"] is not None:
-            args.append(f"--{key} {value['value']}")
+            if isinstance(value['value'], bool) and value['value'] == True:
+                args.append(f"--{key}")
+            elif value['value'] == False:
+                continue
+            else:
+                args.append(f"--{key}={value['value']}")
     return " ".join(args)
 
 command_line_args = extract_command_line_args(config)
