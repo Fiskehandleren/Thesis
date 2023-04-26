@@ -168,7 +168,7 @@ def generate_prediction_data(dm, model) -> List[Tuple[str, pd.DataFrame]] :
         df_pred = pd.DataFrame(model.test_y_hat, columns=np.char.add(col_names, '_pred'))
         df_uncensored = pd.DataFrame(model.test_y_true, columns=np.char.add(col_names, '_true'))
 
-        predictions.append((dm.cluster_names[0], pd.concat([df_dates, df_true, df_pred, df_uncensored], axis=1)))
+        predictions.append((dm.cluster_names[0], pd.concat([df_dates, df_true, df_uncensored, df_pred], axis=1)))
 
     return predictions
     #preds.to_csv(f"predictions/predictions_{model_name}_{run_name}.csv")
