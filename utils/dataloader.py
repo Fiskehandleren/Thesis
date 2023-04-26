@@ -213,7 +213,6 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
     
     ## TODO: add option for validation set
     target_var = target
-
     ## if censored:
     if censor_dynamic:
         path  = os.path.join(ROOT_PATH, f'../data/charging_session_count_1_to_30_censored_{censorship_level}_dynamic.csv')
@@ -221,28 +220,28 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
         path = os.path.join(ROOT_PATH, f'../data/charging_session_count_1_to_30_censored_{censorship_level}.csv')
 
     df = pd.read_csv(path, parse_dates=['Period'])
+    df_time = df.copy()
 
-    df_test = df.copy()
-    df_test[target_var + '_TAU'] = df_test[target_var + '_TAU'].shift(-forecast_lead)
-    df_test[target_var + '_TRUE'] = df_test[target_var + '_TRUE'].shift(-forecast_lead)
+    df[target_var + '_TAU'] = df[target_var + '_TAU'].shift(-forecast_lead)
+    df[target_var + '_TRUE'] = df[target_var + '_TRUE'].shift(-forecast_lead)
 
     if multiple_stations:
         
         ## keep data from other stations, the period and threshold tau for target variable
-        features = [v for v in df_test.columns if target + '_TAU' in v]
-        other_stations = [v for v in df_test.columns if '_TAU' not in v]
+        features = [v for v in df.columns if target + '_TAU' in v]
+        other_stations = [v for v in df.columns if '_TAU' not in v]
         features.extend(other_stations)
 
-        df_test = df_test[features]
+        df = df[features]
 
         ## Remove tau so it isnt an input feature
         features.remove(target + '_TAU')
         features.remove(target + '_TRUE')
 
     else:
-        features = [v for v in df_test.columns if target in v]
+        features = [v for v in df.columns if target in v]
         features.append('Period')
-        df_test = df_test[features]
+        df = df[features]
 
         print(features)
         ## Remove tau and true valueso it isnt an input feature
@@ -268,15 +267,15 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
    
     ## create end points for dataset
     val_start = train_end + " 00:30:00"
-    test_start =  test_end + " 00:30:00"
+    test_start =  val_end + " 00:30:00"
 
     if (type(train_end) != int):
-        train_start = df_test[df_test['Period'] == train_start].index.values[0]
-        train_end = df_test[df_test['Period'] == train_end].index.values[0]
-        test_start = df_test[df_test['Period'] == test_start].index.values[0]
-        test_end = df_test[df_test['Period'] == test_end].index.values[0]
-        val_start = df_test[df_test['Period'] == val_start].index.values[0]
-        val_end = df_test[df_test['Period'] == val_end].index.values[0]
+        train_start = df[df['Period'] == train_start].index.values[0]
+        train_end = df[df['Period'] == train_end].index.values[0]
+        val_start = df[df['Period'] == val_start].index.values[0]
+        val_end = df[df['Period'] == val_end].index.values[0]
+        test_start = df[df['Period'] == test_start].index.values[0]
+        test_end = df[df['Period'] == test_end].index.values[0]
 
     # Create target variable. We might have more targets if we're running 
     # multivariate models
@@ -287,35 +286,35 @@ def get_datasets_NN(target, forecast_lead, add_month=True, add_hour=True, add_da
         target = f"{target_var}_lead{forecast_lead}"
     
     ## Shift target variable(s)
-    df_test[target] = df_test[target_var].shift(-forecast_lead)
-    df_test = df_test.iloc[:-forecast_lead]
+    df[target] = df[target_var].shift(-forecast_lead)
+    df = df.iloc[:-forecast_lead]
 
 
     new_cols = []
     if add_month:
-        df_test['month'] = df.Period.dt.month
-        df_test, new_cols = cyclical_encode(df_test, 'month', 12)
+        df['month'] = df_time.Period.dt.month
+        df, new_cols = cyclical_encode(df, 'month', 12)
         features.extend(new_cols)
         #features = features + new_cols
     if add_day_of_week:
-        df_test['dayofweek'] = df.Period.dt.dayofweek
-        df_test, new_cols = cyclical_encode(df_test, 'dayofweek', 7)
+        df['dayofweek'] = df_time.Period.dt.dayofweek
+        df, new_cols = cyclical_encode(df, 'dayofweek', 7)
         features.extend(new_cols)
         #features = features + new_cols
     if add_hour:
-        df_test['hour'] = df.Period.dt.hour
-        df_test, new_cols = cyclical_encode(df_test, 'hour', 24)
+        df['hour'] = df_time.Period.dt.hour
+        df, new_cols = cyclical_encode(df, 'hour', 24)
         features.extend(new_cols)
         #features = features + new_cols
     if add_year:
-        df_test['year'] = df.Period.dt.year - df.Period.dt.year.min()
+        df['year'] = df_time.Period.dt.year - df_time.Period.dt.year.min()
         features.append('year')
 
 
     ## Create train/test set
-    df_train = df_test.loc[train_start:train_end].copy()
-    df_val = df_test.loc[val_start:val_end].copy()
-    df_test = df_test.loc[test_start:test_end].copy()
+    df_train = df.loc[train_start:train_end].copy()
+    df_val = df.loc[val_start:val_end].copy()
+    df_test = df.loc[test_start:test_end].copy()
 
     features.remove('Period')
 
