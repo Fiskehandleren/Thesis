@@ -27,7 +27,7 @@
 #BSUB -oo job_out/gpu-%J.out
 #BSUB -eo job_out/gpu_%J.err
 # -- end of LSF options --
-bash python3 -m wandb agent latend-demand/Thesis/af4w4z89
+## bash python3 -m wandb agent latend-demand/Thesis/af4w4z89
 
 
-## bash python3 main.py ....
+bash python3 main.py --loss=CPNLL --mode=train --logger --devices=1 --val_end=2019-05-02 --censored --test_end=2019-06-30 --max_steps=-1 --num_nodes=1 --precision=32 --train_end=2019-01-01 --batch_size=67 --dataloader=EVChargersDatasetSpatial --hidden_dim=38 --max_epochs=10 --model_name=TGCN --accelerator=gpu --train_start=2017-01-01 --censor_level=2 --weight_decay=0.0998543610822035 --forecast_lead=1 --learning_rate=0.04273100373245771 --no_self_loops --censor_dynamic --inference_mode --sequence_length=336 --track_grad_norm=-1 --forecast_horizon=1 --log_every_n_steps=50 --enable_progress_bar --replace_sampler_ddp --enable_checkpointing --enable_model_summary --num_sanity_val_steps=2 --check_val_every_n_epoch=1 --multiple_trainloader_mode=max_size_cycle
