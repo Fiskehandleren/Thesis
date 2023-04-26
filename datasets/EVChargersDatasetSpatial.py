@@ -49,7 +49,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.censored = censored
         self.censor_dynamic = censor_dynamic
 
-        self.num_workers = mp.cpu_count()
+        self.num_workers = min(mp.cpu_count(), 8)
 
         self.df = dataloader.load_data()
         dataset_name = self.get_dataset_name()

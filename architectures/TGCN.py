@@ -45,7 +45,7 @@ class TGCN(LightningModule):
         self.test_y_hat = np.empty((0, 8, forecast_horizon))
         self.test_y_true = np.empty((0, 8, forecast_horizon))
 
-        self.save_hyperparameters(ignore=["edge_index", "edge_weight"])
+        self.save_hyperparameters(ignore=["edge_index", "edge_weight", "node_features", "loss_fn"])
 
     def forward(self, x, edge_index, edge_weight):
         # X is shape (Batch Size, Nodes, Features, Sequence Length)
