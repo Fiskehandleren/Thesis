@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "TGCN",
             "type": "python",
@@ -161,7 +162,8 @@
                 "--num_layers", "1",
                 "--loss", "CPNLL",
                 "--censor_level", "2",
-                "--logger", "False"
+                "--logger", "False",
+                "--save_predictions"
             ]
         }
     ]

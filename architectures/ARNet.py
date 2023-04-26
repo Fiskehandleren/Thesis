@@ -67,7 +67,7 @@ class ARNet(pl.LightningModule):
         return loss_metrics["val_loss"]
     
     def test_step(self, batch, batch_idx):
-        loss_metrics, y, y_hat, y_true = self._get_preds_loss_metrics(batch, "test")
+        loss_metrics, y, y_true, y_hat = self._get_preds_loss_metrics(batch, "test")
         self.log_dict(loss_metrics, on_epoch=True, on_step=False, prog_bar=True)
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
         self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
