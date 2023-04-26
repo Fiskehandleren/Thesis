@@ -166,6 +166,7 @@ class SequenceSpatialDataset(Dataset):
         y_start = i
         y_end = y_start + self.forecast_horizon
 
+        # If we are at the end of the time series, we need to pad the sequence with the last element
         if y_end > self.y.shape[1]:
             pad_length = y_end - self.y.shape[1]
 
@@ -181,6 +182,7 @@ class SequenceSpatialDataset(Dataset):
             y_true_padding = y_true_values[:, -1].unsqueeze(1).repeat_interleave(pad_length, dim=1)
             y_true_values = torch.cat((y_true_values, y_true_padding), 1)
         else:
+            # If we are not at the end of the time series, we can just take the next forecast_horizon values
             y_values = self.y[:, y_start:y_end]
             tau_values = self.tau[:, y_start:y_end]
             y_true_values = self.y_true[:, y_start:y_end]

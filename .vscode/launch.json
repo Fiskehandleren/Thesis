@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "TemporalGCN",
+            "name": "TGCN",
             "type": "python",
             "request": "launch",
             "program": "main.py",
@@ -25,12 +25,12 @@
                 "--dataloader", "EVChargersDatasetSpatial",
                 "--censor_dynamic",
                 "--loss", "CPNLL",
-                "--sequence_length", "43",
+                "--sequence_length", "10",
                 "--forecast_lead", "1",
                 "--censor_level", "2",
-                //"--precision", "16",
                 "--weight_decay", "0.08891358780672566",
-                "--learning_rate", "0.015698377822432722"
+                "--learning_rate", "0.015698377822432722",
+                "--logger", "False"
             ]
         },
         {
@@ -54,9 +54,9 @@
                 "--censored",
                 "--dataloader", "EVChargersDatasetSpatial",
                 "--loss", "CPNLL",
-                "--sequence_length", "53",
+                "--sequence_length", "10",
                 "--forecast_lead", "1",
-                "--censor_level", "2",
+                "--censor_level", "2"
             ]
         },
         {
@@ -83,6 +83,7 @@
                 "--dataloader", "EVChargersDataset",
                 "--loss", "CPNLL",
                 "--censor_level", "2",
+                "--logger", "False"
             ]
         },
         {
@@ -107,6 +108,7 @@
                 "--dataloader", "EVChargersDataset",
                 "--loss", "CPNLL",
                 "--censor_level", "2",
+                "--logger", "False"
             ]
         },
         {
@@ -132,6 +134,7 @@
                 "--dataloader", "EVChargersDataset",
                 "--loss", "CPNLL",
                 "--censor_level", "2",
+                "--logger", "False"
             ]
         },
         {
@@ -158,6 +161,7 @@
                 "--num_layers", "1",
                 "--loss", "CPNLL",
                 "--censor_level", "2",
+                "--logger", "False"
             ]
         }
     ]
