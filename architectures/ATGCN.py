@@ -15,6 +15,7 @@ class ATGCN(LightningModule):
         edge_index,
         edge_weight,
         node_features: int,
+        forecast_horizon:int,
         sequence_length: int,
         hidden_dim: int,
         batch_size: int,
@@ -45,29 +46,29 @@ class ATGCN(LightningModule):
         self.linear = torch.nn.Linear(hidden_dim, 1)
 
         # To save predictions and their true values for visualizations
-        self.test_y = np.empty((0, 8))
-        self.test_y_hat = np.empty((0, 8))
-        self.test_y_true = np.empty((0, 8))
+        self.test_y = np.empty((0, 8, forecast_horizon))
+        self.test_y_hat = np.empty((0, 8, forecast_horizon))
+        self.test_y_true = np.empty((0, 8, forecast_horizon))
 
-        self.save_hyperparameters(ignore=["model", "loss_fn", "edge_index", "edge_weight"])
+        self.save_hyperparameters(ignore=["loss_fn", "edge_index", "edge_weight", "node_features"])
 
     def forward(self, x, edge_index, edge_weight):
         h = self.atgcn(x, edge_index, edge_weight)
-        y = F.relu(h)
         y = self.linear(h)
         return y.exp(), h
     
-    def _get_preds_loss_metrics(self, batch, stage):
+    def _get_preds_loss_metrics(self, batch, stage):        
+        y_hat = self._get_preds(batch)
+        return self.get_loss_metrics(batch, y_hat, stage)
+    
+    def _get_preds(self, batch):
         x = batch[0]
         # Transfer graph stuff to device
         self.edge_index = self.edge_index.to(self.device)
         self.edge_weight = self.edge_weight.to(self.device)
-        
         # Make predictions
         y_hat, _ = self(x, self.edge_index, self.edge_weight)
-        y_hat = y_hat.view(-1, x.shape[1])
-
-        return self.get_loss_metrics(batch, y_hat, stage)
+        return y_hat
     
     def training_step(self, batch, batch_idx):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "train")
@@ -78,6 +79,15 @@ class ATGCN(LightningModule):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "val")
         self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
         return loss_metrics["val_loss"]
+
+    def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
+        y_hat = self._get_preds(batch)
+        _, y, _, y_true = batch
+        self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
+        self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
+        if self.censored:
+            self.test_y_true = np.concatenate((self.test_y_true, y_true.cpu().detach().numpy()))
+        return y_true
     
     def test_step(self, batch, batch_idx):
         loss_metrics, y, y_true, y_hat = self._get_preds_loss_metrics(batch, "test")
