@@ -29,8 +29,9 @@
 # -- end of LSF options --
 
 ## CNLL
-bash python3 -m wandb agent latend-demand/Thesis/zbeylxfq
-## bash python3 main.py --model_name GRU --cluster WEBSTER --train_start 2018-01-01 --train_end 2019-01-01 --val_end 2019-06-30 --test_end 2019-05-02 --sequence_length 303 --hidden_dim 97 --batch_size 17 --max_epochs 15 --learning_rate 0.01931 --weight_decay 0.02526 --dataloader EVChargersDataset  --loss PNLL --censor_level 2 --accelerator gpu --devices 1
+## bash python3 -m wandb agent latend-demand/Thesis/v2mbh6sd
+
+bash python3 main.py --model_name GRU --cluster WEBSTER --train_start 2018-01-01 --train_end 2019-01-01 --val_end 2019-06-30 --test_end 2019-05-02 --sequence_length 303 --hidden_dim 97 --batch_size 17 --max_epochs 15 --learning_rate 0.01931 --weight_decay 0.02526 --dataloader EVChargersDataset  --loss PNLL --censor_level 2 --accelerator gpu --devices 1
 
 
 ## PNLL

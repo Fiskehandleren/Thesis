@@ -18,6 +18,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         batch_size: int,
         sequence_length: int,
         forecast_lead: int,
+        forecast_horizon: int,
         cluster: str,
         train_start: str,
         train_end: str,
@@ -29,10 +30,13 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         **kwargs
     ):
         super().__init__()
-        self.coverariates = covariates
+        self.covariates = covariates
         self.batch_size = batch_size
         self.sequence_length = sequence_length
         self.forecast_lead = forecast_lead
+        self.forecast_horizon = forecast_horizon
+        self.censor_level = censor_level
+        # Set the train, val and test dates
         self.train_start = train_start
         self.train_end = train_end
 
@@ -48,15 +52,9 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.num_workers = mp.cpu_count()
 
         self.df = dataloader.load_data()
-        if censor_dynamic:
-            dataset_name = f'../data/charging_session_count_1_to_30{f"_censored_{censor_level}" if self.censored else ""}_dynamic.csv'
-        else: 
-            dataset_name = f'../data/charging_session_count_1_to_30{f"_censored_{censor_level}" if self.censored else ""}.csv'
-        if not os.path.exists(os.path.join(ROOT_PATH, dataset_name)):
-            print(f'Dataset "{dataset_name}" not found locally. Creating dataset...')
-            self._feat = dataloader.create_count_data(self.df, 30, save=True)
-        else:
-            self._feat = pd.read_csv(os.path.join(ROOT_PATH, dataset_name), parse_dates=['Period'])
+        dataset_name = self.get_dataset_name()
+
+        self._feat = pd.read_csv(os.path.join(ROOT_PATH, dataset_name), parse_dates=['Period'])
 
         if cluster is not None:
             self._feat = self._feat[cluster].to_frame()
@@ -70,21 +68,15 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         X, y, tau, y_true = dataloader.get_targets_and_features_tgcn(
             self._feat,
             node_names=self.cluster_names,
-            sequence_length=self.sequence_length,
             forecast_lead=self.forecast_lead,
-            add_month=self.coverariates,
-            add_day_of_week=self.coverariates,
-            add_hour=self.coverariates,
-            add_year=self.coverariates)
+            add_month=self.covariates,
+            add_day_of_week=self.covariates,
+            add_hour=self.covariates,
+            add_year=self.covariates)
 
-        train_start_index = self._feat[(self._feat.Period == self.train_start)].index[0]
-        train_end_index = self._feat[(self._feat.Period == self.train_end)].index[0]
-
-        val_start_index = self._feat[(self._feat.Period == self.val_start)].index[0]
-        val_end_index = self._feat[(self._feat.Period == self.val_end)].index[0]
-
-        test_start_index = self._feat[self._feat.Period == self.test_start].index[0]
-        test_end_index = self._feat[self._feat.Period == self.test_end].index[0]
+        train_start_index, train_end_index = self.get_indices(self.train_start, self.train_end)
+        val_start_index, val_end_index = self.get_indices(self.val_start, self.val_end)
+        test_start_index, test_end_index = self.get_indices(self.test_start, self.test_end)
         
         # Grab training data from the start of the dataset to the start of the test set
         self.X_train, self.y_train = X[:, :, train_start_index : train_end_index], y[:, train_start_index : train_end_index]
@@ -93,8 +85,8 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
 
         self.y_dates = self._feat[test_start_index : test_end_index].Period.to_numpy()
 
-        self.tau_train, self.tau_test = tau[:, train_start_index:train_end_index], tau[:, train_end_index:]
-        self.y_train_true, self.y_test_true = y_true[:, train_start_index:train_end_index], y_true[:, train_end_index:]
+        self.tau_train, self.tau_test, self.tau_val = tau[:, train_start_index : train_end_index], tau[:, test_start_index : test_end_index], tau[:, val_start_index : val_end_index]
+        self.y_train_true, self.y_test_true, self.y_val_true = y_true[:, train_start_index : train_end_index], y_true[:, test_start_index : test_end_index], y_true[:, val_start_index : val_end_index]
 
         _, _, self.edge_index, self.edge_weight = dataloader.get_graph(self.df)
 
@@ -114,33 +106,48 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.train_dataset = SequenceSpatialDataset(
             torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train),
             torch.FloatTensor(self.tau_train), torch.FloatTensor(self.y_train_true),
-            self.sequence_length
+            self.sequence_length, self.forecast_horizon
         )
         self.val_dataset = SequenceSpatialDataset(
-            torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test),
-            torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true),
-            self.sequence_length
+            torch.FloatTensor(self.X_val), torch.FloatTensor(self.y_val),
+            torch.FloatTensor(self.tau_val), torch.FloatTensor(self.y_val_true),
+            self.sequence_length, self.forecast_horizon
         )
         self.test_dataset = SequenceSpatialDataset(
             torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test),
             torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true),
-            self.sequence_length
+            self.sequence_length, self.forecast_horizon
         )
        
     @staticmethod
     def add_data_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
         return parser
+    
+    def get_indices(self, start_date, end_date):
+        start_index = self._feat[(self._feat.Period == start_date)].index[0]
+        end_index = self._feat[(self._feat.Period == end_date)].index[0]
+        return start_index, end_index
+    
+    def get_dataset_name(self):
+        if self.censored:
+            censor_level = f'{self.censor_level}' 
+        else:
+            censor_level = ''
+        if self.censor_dynamic:
+            return f'../data/charging_session_count_1_to_30{f"_censored_{censor_level}" if self.censored else ""}_dynamic.csv'
+        else:
+            return f'../data/charging_session_count_1_to_30{f"_censored_{censor_level}" if self.censored else ""}.csv'
 
 
 class SequenceSpatialDataset(Dataset):
-    ## Class to retrieve time series elements appropirately with CENSORED target variable y
-    def __init__(self, X, y, tau, y_true, sequence_length):
+    def __init__(self, X, y, tau, y_true, sequence_length, forecast_horizon):
         self.sequence_length = sequence_length
         self.X = X
         self.y = y
         self.tau = tau
         self.y_true = y_true
+        self.forecast_horizon = forecast_horizon
 
     def __len__(self):
         return self.X.shape[2]
@@ -155,8 +162,29 @@ class SequenceSpatialDataset(Dataset):
             padding = self.X[:, :, 0].unsqueeze(2).repeat_interleave(self.sequence_length - i - 1, dim=2)
             x = self.X[:, :, 0:(i + 1)]
             x = torch.cat((padding, x), 2)
- 
-        if self.tau is not None:
-            return x, self.y[:,i], self.tau[:,i], self.y_true[:,i]
+
+        y_start = i
+        y_end = y_start + self.forecast_horizon
+
+        # If we are at the end of the time series, we need to pad the sequence with the last element
+        if y_end > self.y.shape[1]:
+            pad_length = y_end - self.y.shape[1]
+
+            y_values = self.y[:, y_start:]
+            y_padding = y_values[:, -1].unsqueeze(1).repeat_interleave(pad_length, dim=1)
+            y_values = torch.cat((y_values, y_padding), 1)
+
+            tau_values = self.tau[:, y_start:]
+            tau_padding = tau_values[:, -1].unsqueeze(1).repeat_interleave(pad_length, dim=1)
+            tau_values = torch.cat((tau_values, tau_padding), 1)
+
+            y_true_values = self.y_true[:, y_start:]
+            y_true_padding = y_true_values[:, -1].unsqueeze(1).repeat_interleave(pad_length, dim=1)
+            y_true_values = torch.cat((y_true_values, y_true_padding), 1)
         else:
-            return x, self.y[:,i]
+            # If we are not at the end of the time series, we can just take the next forecast_horizon values
+            y_values = self.y[:, y_start:y_end]
+            tau_values = self.tau[:, y_start:y_end]
+            y_true_values = self.y_true[:, y_start:y_end]
+
+        return x, y_values, tau_values, y_true_values

@@ -13,6 +13,7 @@ class TGCN(LightningModule):
         edge_index,
         edge_weight,
         node_features: int,
+        forecast_horizon:int,
         sequence_length: int,
         hidden_dim: int,
         batch_size: int,
@@ -29,23 +30,20 @@ class TGCN(LightningModule):
         self.censored = censored
         # Hyperparameters
         self.sequence_length = sequence_length
-        self.hidden_dim = hidden_dim
-        self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
-        self.no_self_loops = no_self_loops
 
         TGCN.get_loss_metrics = get_loss_metrics
 
         # We add improved self-loops for each node, to make sure that the nodes are weighing themselves
         # more than their neighbors. `improved=True` means that A_hat = A + 2I, so the diagonal is 3.
-        self.tgcn_cell = TGCN2(node_features, self.hidden_dim, add_self_loops=True, improved=not self.no_self_loops, batch_size=batch_size)
-        self.linear = torch.nn.Linear(hidden_dim, 1)
+        self.tgcn_cell = TGCN2(node_features, hidden_dim, add_self_loops=True, improved=not no_self_loops, batch_size=batch_size)
+        self.linear = torch.nn.Linear(hidden_dim, forecast_horizon)
 
         # To save predictions and their true values for visualizations
-        self.test_y = np.empty((0, 8))
-        self.test_y_hat = np.empty((0, 8))
-        self.test_y_true = np.empty((0, 8))
+        self.test_y = np.empty((0, 8, forecast_horizon))
+        self.test_y_hat = np.empty((0, 8, forecast_horizon))
+        self.test_y_true = np.empty((0, 8, forecast_horizon))
 
         self.save_hyperparameters(ignore=["edge_index", "edge_weight"])
 
@@ -57,11 +55,10 @@ class TGCN(LightningModule):
             # Each X_t is of shape (Batch Size, Nodes, Features)
             h = self.tgcn_cell(x[:,:,:,i], edge_index, edge_weight, h)
 
-        y = F.relu(h)
         y = self.linear(h)
         return y.exp(), h
     
-    def _get_preds_loss_metrics(self, batch, stage):
+    def _get_preds_loss_metrics(self, batch, stage):        
         y_hat = self._get_preds(batch)
         return self.get_loss_metrics(batch, y_hat, stage)
     
@@ -72,7 +69,6 @@ class TGCN(LightningModule):
         self.edge_weight = self.edge_weight.to(self.device)
         # Make predictions
         y_hat, _ = self(x, self.edge_index, self.edge_weight)
-        y_hat = y_hat.view(-1, x.shape[1])
         return y_hat
 
     def training_step(self, batch, batch_idx):
