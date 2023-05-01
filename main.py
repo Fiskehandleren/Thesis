@@ -94,9 +94,6 @@ if __name__ == "__main__":
 
     # Print arguments
     print(args)
-    
-    model = get_model(args, dm)
-    
     if args.logger:
         import wandb
         wandb_logger = WandbLogger(project='Thesis', log_model='all', job_type=args.mode)
@@ -104,13 +101,13 @@ if __name__ == "__main__":
     else:
         wandb_logger = None
         run_name = "local"
-    #wandb_logger.watch(model)
 
+    model = get_model(args, dm)
 
     checkpoint_callback = ModelCheckpoint(monitor='val_loss', mode='min', save_last=True)
     
     trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
-    predictions = pd.DataFrame()
+    predictions = []
     if args.mode == "train":
         trainer.fit(model, dm, ckpt_path=args.pretrained)
         trainer.test(model, datamodule=dm)
@@ -125,12 +122,16 @@ if __name__ == "__main__":
                     wandb.log({f"test_predictions_{cluster}": wandb.Html(open(html_path), inject=False)})
                     remove(html_path)
     elif args.mode == 'predict':
+        trainer.test(model, datamodule=dm)
         trainer.predict(model, datamodule=dm, return_predictions=False)
         predictions = generate_prediction_data(dm, model)
     
     for tup in predictions:
         cluster, prediction = tup[0], tup[1]
+        print(cluster)
         prediction.to_csv(f"predictions/predictions_{args.model_name}_{cluster}_{run_name}.csv")
+        html_path = generate_prediction_html(prediction, run_name)
+        wandb.log({f"test_predictions_{cluster}": wandb.Html(open(html_path), inject=False)})
 
     if args.logger:
         wandb.finish()
