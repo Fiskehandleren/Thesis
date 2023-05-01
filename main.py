@@ -21,7 +21,7 @@ def get_trained_model(args, dm):
         artifact = run.use_artifact(artifact_dir, type='model')
         artifact_dir = artifact.download() + '/model.ckpt'
     if args.model_name == 'TGCN':
-        model = getattr(architectures, temp_args.model_name).load_from_checkpoint(artifact_dir, edge_index=dm.edge_index, edge_weight=dm.edge_weight, loss_fn = get_loss(args.loss))
+        model = getattr(architectures, temp_args.model_name).load_from_checkpoint(artifact_dir, edge_index=dm.edge_index, edge_weight=dm.edge_weight, loss_fn = get_loss(args.loss), node_features=dm.X_train.shape[1])
     else:
         model = getattr(architectures, temp_args.model_name).load_from_checkpoint(artifact_dir, loss_fn = get_loss(args.loss))
     return model
