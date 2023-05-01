@@ -156,7 +156,7 @@ def generate_prediction_data(dm, model) -> List[Tuple[str, pd.DataFrame]] :
     df_dates = pd.DataFrame(dm.y_dates, columns=['Date'])
     # TGCN case
     if len(model.test_y.shape) == 3:
-        for i in range(model.test_y.shape[2]): # Go through each cluster
+        for i in range(model.test_y.shape[1]): # Go through each cluster
             col_names = generate_column_names([dm.cluster_names[i]], dm.forecast_horizon)
             df_true = pd.DataFrame(model.test_y[:,i,:], columns=col_names)
             df_pred = pd.DataFrame(model.test_y_hat[:,i,:], columns=np.char.add(col_names, '_pred'))
