@@ -181,7 +181,8 @@ def generate_prediction_html(predictions, run_name):
         "yaxis_title_font_size": 14})
     )
 
-    predictions.set_index('Date', inplace=True, drop=True)
+    if 'Date' in predictions.columns: 
+        predictions.set_index('Date', inplace=True, drop=True)
     fig = px.line(predictions, labels=dict(created_at="Date", value="Sessions"))
     fig.update_layout(
         template=plot_template, legend=dict(orientation='h', y=1.06, title_text="")
