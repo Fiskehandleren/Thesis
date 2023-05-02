@@ -156,7 +156,7 @@ def generate_prediction_data(dm, model) -> List[Tuple[str, pd.DataFrame]] :
     df_dates = pd.DataFrame(dm.y_dates, columns=['Date'])
     # TGCN case
     if len(model.test_y.shape) == 3:
-        for i in range(model.test_y.shape[2]): # Go through each cluster
+        for i in range(model.test_y.shape[1]): # Go through each cluster
             col_names = generate_column_names([dm.cluster_names[i]], dm.forecast_horizon)
             df_true = pd.DataFrame(model.test_y[:,i,:], columns=col_names)
             df_pred = pd.DataFrame(model.test_y_hat[:,i,:], columns=np.char.add(col_names, '_pred'))
@@ -181,7 +181,8 @@ def generate_prediction_html(predictions, run_name):
         "yaxis_title_font_size": 14})
     )
 
-    predictions.set_index('Date', inplace=True, drop=True)
+    if 'Date' in predictions.columns: 
+        predictions.set_index('Date', inplace=True, drop=True)
     fig = px.line(predictions, labels=dict(created_at="Date", value="Sessions"))
     fig.update_layout(
         template=plot_template, legend=dict(orientation='h', y=1.06, title_text="")
