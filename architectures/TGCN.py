@@ -73,12 +73,12 @@ class TGCN(LightningModule):
 
     def training_step(self, batch, batch_idx):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "train")
-        self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        self.log_dict(loss_metrics, prog_bar=True)
         return loss_metrics["train_loss"]
     
     def validation_step(self, batch, batch_idx):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "val")
-        self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        self.log_dict(loss_metrics, prog_bar=True)
         return loss_metrics["val_loss"]
 
     def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
@@ -92,7 +92,7 @@ class TGCN(LightningModule):
 
     def test_step(self, batch, batch_idx):
         loss_metrics, y, y_true, y_hat = self._get_preds_loss_metrics(batch, "test")
-        self.log_dict(loss_metrics, on_epoch=True, on_step=False, prog_bar=True)
+        self.log_dict(loss_metrics, on_epoch=False, on_step=True, prog_bar=True)
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
         self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
         if self.censored:
