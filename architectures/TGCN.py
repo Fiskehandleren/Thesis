@@ -17,8 +17,8 @@ class TGCN(LightningModule):
         sequence_length: int,
         hidden_dim: int,
         batch_size: int,
-        learning_rate: float = 1e-3,
-        weight_decay: float = 1.5e-3,
+        learning_rate: float,
+        weight_decay: float,
         censored= False,
         no_self_loops=False,
         **kwargs
@@ -73,12 +73,12 @@ class TGCN(LightningModule):
 
     def training_step(self, batch, batch_idx):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "train")
-        self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        self.log_dict(loss_metrics, prog_bar=True)
         return loss_metrics["train_loss"]
     
     def validation_step(self, batch, batch_idx):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "val")
-        self.log_dict(loss_metrics, prog_bar=True, on_epoch=True, on_step=False)
+        self.log_dict(loss_metrics, prog_bar=True)
         return loss_metrics["val_loss"]
 
     def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
