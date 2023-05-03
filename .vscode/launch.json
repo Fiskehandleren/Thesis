@@ -42,22 +42,30 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--mode", "predict",
-                "--pretrained", "fiskehandleren/Thesis/model-232ybnqc:v1",
-                "--model_name", "TGCN",
-                "--train_start", "2018-01-01",
-                "--train_end", "2019-01-01",
-                "--test_end", "2019-05-02",
-                "--val_end", "2019-06-30",
-                "--covariates",
-                "--batch_size", "32",
-                "--max_epochs", "1",
+                "--loss=CPNLL",
+                "--mode=predict",
+                "--logger",
+                "--val_end=2019-05-02",
                 "--censored",
-                "--dataloader", "EVChargersDatasetSpatial",
-                "--loss", "CPNLL",
-                "--sequence_length", "10",
-                "--forecast_lead", "1",
-                "--censor_level", "2"
+                "--test_end=2019-06-30",
+                "--max_steps=-1",
+                "--precision=32",
+                "--train_end=2019-01-01",
+                "--batch_size=67",
+                "--dataloader=EVChargersDatasetSpatial",
+                "--hidden_dim=256",
+                "--max_epochs=100",
+                "--model_name=TGCN",
+                "--train_start=2017-01-01",
+                "--censor_level=2",
+                "--weight_decay=0.0998543610822035",
+                "--forecast_lead=1",
+                "--learning_rate=0.1",
+                "--censor_dynamic",
+                "--sequence_length=336",
+                "--forecast_horizon=1",
+                "--pretrained=latend-demand/Thesis/model-lp6vb5v8:v25",
+                "--save_predictions"
             ]
         },
         {
@@ -84,7 +92,6 @@
                 "--dataloader", "EVChargersDataset",
                 "--loss", "CPNLL",
                 "--censor_level", "2",
-                "--logger", "False"
             ]
         },
         {
@@ -163,7 +170,6 @@
                 "--loss", "CPNLL",
                 "--censor_level", "2",
                 "--logger", "False",
-                "--save_predictions"
             ]
         }
     ]
