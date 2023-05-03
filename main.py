@@ -35,12 +35,8 @@ def get_model(args, dm):
     loss_fn = get_loss(args.loss)
 
     if args.model_name == "TGCN":
-        if args.censored:
-            assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
         model = TGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[1], loss_fn = loss_fn, **vars(args))
     elif args.model_name == "ATGCN":
-        if args.censored:
-            assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
         model = ATGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[1], loss_fn = loss_fn, **vars(args))
     elif args.model_name == "AR":
         assert not args.covariates, "AR models cannot include covariates"
@@ -106,7 +102,7 @@ if __name__ == "__main__":
 
     checkpoint_callback = ModelCheckpoint(monitor='val_loss', mode='min', save_last=True)
     
-    trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
+    trainer = Trainer.from_argparse_args(args, logger=wandb_logger)#, callbacks=[checkpoint_callback])
     predictions = []
     if args.mode == "train":
         trainer.fit(model, dm, ckpt_path=args.pretrained)
@@ -128,7 +124,6 @@ if __name__ == "__main__":
     
     for tup in predictions:
         cluster, prediction = tup[0], tup[1]
-        print(cluster)
         prediction.to_csv(f"predictions/predictions_{args.model_name}_{cluster}_{run_name}.csv")
         html_path = generate_prediction_html(prediction, run_name)
         wandb.log({f"test_predictions_{cluster}": wandb.Html(open(html_path), inject=False)})

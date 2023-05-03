@@ -129,15 +129,12 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         end_index = self._feat[(self._feat.Period == end_date)].index[0]
         return start_index, end_index
     
-    def get_dataset_name(self):
-        if self.censored:
-            censor_level = f'{self.censor_level}' 
-        else:
-            censor_level = ''
+    def get_dataset_name(self) -> str:
+        censor_level = f'{self.censor_level}' 
         if self.censor_dynamic:
-            return f'../data/charging_session_count_1_to_30{f"_censored_{censor_level}" if self.censored else ""}_dynamic.csv'
+            return f'../data/charging_session_count_1_to_30_censored_{censor_level}_dynamic.csv'
         else:
-            return f'../data/charging_session_count_1_to_30{f"_censored_{censor_level}" if self.censored else ""}.csv'
+            return f'../data/charging_session_count_1_to_30_censored_{censor_level}.csv'
 
 
 class SequenceSpatialDataset(Dataset):
