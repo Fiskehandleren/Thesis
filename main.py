@@ -17,6 +17,7 @@ def get_trained_model(args, dm):
     artifact_dir = args.pretrained
     # If we're loading an artifact from wandb, we need to download it first
     if ":" in args.pretrained:
+        assert args.logger == True, "If you're loading a model from wandb, you must use the wandb logger"
         run = wandb.init(job_type='predict', )
         artifact = run.use_artifact(artifact_dir, type='model')
         artifact_dir = artifact.download() + '/model.ckpt'
@@ -53,9 +54,11 @@ def get_model(args, dm):
     return model
 
 if __name__ == "__main__":
+    print("Starting at: ", pd.Timestamp.now())
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser = Trainer.add_argparse_args(parser)
 
+    # Model and data related arguments
     parser.add_argument("--mode", choices=("train", "test", "predict"), default="train")
     parser.add_argument("--save_predictions", help="Store predictions after training", default=False, action='store_true')
     parser.add_argument("--model_name", type=str, help="The name of the model", 
@@ -80,16 +83,19 @@ if __name__ == "__main__":
     parser.add_argument("--test_end", type=str, required=True)
     parser.add_argument("--val_end", type=str, required=False)
 
-
+    # Parse known arguments to get dataloader and model name
     temp_args, _ = parser.parse_known_args()
     parser = getattr(datasets, temp_args.dataloader).add_data_specific_arguments(parser)
     parser = getattr(architectures, temp_args.model_name).add_model_specific_arguments(parser)
     args = parser.parse_args()
 
+    # Initialize datamodule
     dm = getattr(datasets, temp_args.dataloader)(**vars(args))
 
     # Print arguments
     print(args)
+
+    # Setup logger
     if args.logger:
         import wandb
         wandb_logger = WandbLogger(project='Thesis', log_model='all', job_type=args.mode)
@@ -98,11 +104,16 @@ if __name__ == "__main__":
         wandb_logger = None
         run_name = "local"
 
+    # Initialize model
     model = get_model(args, dm)
 
+    # Setup checkpoint
     checkpoint_callback = ModelCheckpoint(monitor='val_loss', mode='min', save_last=True)
     
-    trainer = Trainer.from_argparse_args(args, logger=wandb_logger)#, callbacks=[checkpoint_callback])
+    # Initialize trainer
+    trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
+
+    # Train, test, and predict
     predictions = []
     if args.mode == "train":
         trainer.fit(model, dm, ckpt_path=args.pretrained)
@@ -122,6 +133,7 @@ if __name__ == "__main__":
         trainer.predict(model, datamodule=dm, return_predictions=False)
         predictions = generate_prediction_data(dm, model)
     
+    # Log predictions
     for tup in predictions:
         cluster, prediction = tup[0], tup[1]
         prediction.to_csv(f"predictions/predictions_{args.model_name}_{cluster}_{run_name}.csv")
