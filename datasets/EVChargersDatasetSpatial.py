@@ -187,4 +187,7 @@ class SequenceSpatialDataset(Dataset):
             tau_values = self.tau[:, y_start:y_end]
             y_true_values = self.y_true[:, y_start:y_end]
 
+        # min max scale x 
+        x = (x - x.min()) / (x.max() - x.min())
+
         return x, y_values, tau_values, y_true_values
