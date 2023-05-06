@@ -54,6 +54,7 @@ def get_model(args, dm):
 def validate_args(args):
     assert args.train_start < args.train_end, "Training start date must be before training end date"
     assert args.train_end < args.test_end, "Training end date must be before test end date"
+    assert args.test_end > args.val_end > args.train_end, "Test end date must be after validation end date, which must be after training end date"
     assert not (args.loss == "PNLL" and args.censored), "PNLL loss cannot be used with censoring" 
     assert not (args.covariates and ('AR' in args.model_name)), "AR models cannot include covariates"
     assert not (not args.logger and args.save_predictions), "If you're saving predictions, you must use a logger"
