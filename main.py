@@ -40,10 +40,8 @@ def get_model(args, dm):
     elif args.model_name == "ATGCN":
         model = ATGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[1], loss_fn = loss_fn, **vars(args))
     elif args.model_name == "AR":
-        assert not args.covariates, "AR models cannot include covariates"
         model = AR(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
     elif args.model_name == "ARNet":
-        assert not args.covariates, "AR models cannot include covariates"
         model = ARNet(input_dim=args.sequence_length, loss_fn = loss_fn, **vars(args))
     elif args.model_name == "LSTM":
         model = LSTM(input_dim=dm.input_dimensions, loss_fn = loss_fn, **vars(args))
@@ -52,6 +50,13 @@ def get_model(args, dm):
     else:
         raise ValueError(f"{args.model_name} not implemented yet!")
     return model
+
+def validate_args(args):
+    assert args.train_start < args.train_end, "Training start date must be before training end date"
+    assert args.train_end < args.test_end, "Training end date must be before test end date"
+    assert not (args.loss == "PNLL" and args.censored), "PNLL loss cannot be used with censoring" 
+    assert not (args.covariates and ('AR' in args.model_name)), "AR models cannot include covariates"
+    assert not (not args.logger and args.save_predictions), "If you're saving predictions, you must use a logger"
 
 if __name__ == "__main__":
     print("Starting at: ", pd.Timestamp.now())
@@ -88,6 +93,8 @@ if __name__ == "__main__":
     parser = getattr(datasets, temp_args.dataloader).add_data_specific_arguments(parser)
     parser = getattr(architectures, temp_args.model_name).add_model_specific_arguments(parser)
     args = parser.parse_args()
+
+    validate_args(args)
 
     # Initialize datamodule
     dm = getattr(datasets, temp_args.dataloader)(**vars(args))
