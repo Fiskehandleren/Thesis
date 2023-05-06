@@ -21,7 +21,6 @@ BASE_ARGS = [
     "--logger", "False",
     "--enable_progress_bar", "False",
     "--enable_model_summary", "False",
-    "--enable_checkpointing", "False",
 ]
 
 def run_main_py(parameters) -> bool:
