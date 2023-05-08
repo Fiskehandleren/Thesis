@@ -7,7 +7,7 @@
 ### -- set the job Name --
 #BSUB -J lstm
 ### -- ask for number of cores (default: 1) --
-#BSUB -n 1
+#BSUB -n 8
 ### -- Select the resources: 1 gpu in exclusive process mode --
 #BSUB -gpu "num=1:mode=exclusive_process"
 ### -- set walltime limit: hh:mm --  maximum 24 hours for GPU-queues right now
@@ -24,7 +24,7 @@
 #BSUB -N
 ### -- Specify the output and error file. %J is the job-id --
 ### -- -o and -e mean append, -oo and -eo mean overwrite --
-#BSUB -oo job_out/gpu-%J.out
+## BSUB -oo job_out/gpu-%J.out
 #BSUB -eo job_out/gpu_%J.err
 # -- end of LSF options --
 
