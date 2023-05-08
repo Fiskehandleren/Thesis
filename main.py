@@ -144,13 +144,12 @@ if __name__ == "__main__":
                     remove(html_path)
     elif args.mode == 'predict':
         trainer.test(model, datamodule=dm)
-        trainer.predict(model, datamodule=dm, return_predictions=False)
         predictions = generate_prediction_data(dm, model)
     
     # Log predictions
     for tup in predictions:
         cluster, prediction = tup[0], tup[1]
-        prediction.to_csv(f"predictions/predictions_{args.model_name}_{cluster}_{run_name}.csv")
+        prediction.to_csv(f"predictions/predictions_{args.model_name}_{cluster}_{run_name}_{args.censor_level}.csv")
         html_path = generate_prediction_html(prediction, run_name)
         wandb.log({f"test_predictions_{cluster}": wandb.Html(open(html_path), inject=False)})
 
