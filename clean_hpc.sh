@@ -7,3 +7,7 @@ git clean -fd Thesis/
 git clean -fd wandb/
 git clean -fd predictions/
 git clean -fd trained_models/
+
+rm -r -f wandb/
+rm -r -f Thesis/
+rm -r -f artifacts/

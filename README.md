@@ -1,5 +1,4 @@
 # Thesis
-
 [![Test models](https://github.com/Fiskehandleren/Thesis/actions/workflows/models.yml/badge.svg)](https://github.com/Fiskehandleren/Thesis/actions/workflows/models.yml)
 
 ## How to train TGCN
