@@ -49,7 +49,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.censored = censored
         self.censor_dynamic = censor_dynamic
 
-        self.num_workers = mp.cpu_count()
+        self.num_workers = min(mp.cpu_count(), 8)
 
         self.df = dataloader.load_data()
         dataset_name = self.get_dataset_name()
@@ -98,9 +98,6 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
 
     def test_dataloader(self):
         return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
-
-    def predict_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
     
     def setup(self, stage=None):
         self.train_dataset = SequenceSpatialDataset(
@@ -129,15 +126,12 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         end_index = self._feat[(self._feat.Period == end_date)].index[0]
         return start_index, end_index
     
-    def get_dataset_name(self):
-        if self.censored:
-            censor_level = f'{self.censor_level}' 
-        else:
-            censor_level = ''
+    def get_dataset_name(self) -> str:
+        censor_level = f'{self.censor_level}' 
         if self.censor_dynamic:
-            return f'../data/charging_session_count_1_to_30{f"_censored_{censor_level}" if self.censored else ""}_dynamic.csv'
+            return f'../data/charging_session_count_1_to_30_censored_{censor_level}_dynamic.csv'
         else:
-            return f'../data/charging_session_count_1_to_30{f"_censored_{censor_level}" if self.censored else ""}.csv'
+            return f'../data/charging_session_count_1_to_30_censored_{censor_level}.csv'
 
 
 class SequenceSpatialDataset(Dataset):
@@ -186,5 +180,8 @@ class SequenceSpatialDataset(Dataset):
             y_values = self.y[:, y_start:y_end]
             tau_values = self.tau[:, y_start:y_end]
             y_true_values = self.y_true[:, y_start:y_end]
+
+        # min max scale x 
+        x = (x - x.min()) / (x.max() - x.min())
 
         return x, y_values, tau_values, y_true_values

@@ -73,9 +73,6 @@ class EVChargersDataset(pl.LightningDataModule):
                                                  self.tau, self.true_target, self.sequence_length,
                                                  forecast_horizon=self.forecast_horizon)
         return DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
-    
-    def predict_dataloader(self):
-        return self.test_dataloader()
 
     @staticmethod
     def add_data_specific_arguments(parent_parser):

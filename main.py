@@ -17,11 +17,12 @@ def get_trained_model(args, dm):
     artifact_dir = args.pretrained
     # If we're loading an artifact from wandb, we need to download it first
     if ":" in args.pretrained:
+        assert args.logger == True, "If you're loading a model from wandb, you must use the wandb logger"
         run = wandb.init(job_type='predict', )
         artifact = run.use_artifact(artifact_dir, type='model')
         artifact_dir = artifact.download() + '/model.ckpt'
     if args.model_name == 'TGCN':
-        model = getattr(architectures, temp_args.model_name).load_from_checkpoint(artifact_dir, edge_index=dm.edge_index, edge_weight=dm.edge_weight, loss_fn = get_loss(args.loss))
+        model = getattr(architectures, temp_args.model_name).load_from_checkpoint(artifact_dir, edge_index=dm.edge_index, edge_weight=dm.edge_weight, loss_fn = get_loss(args.loss), node_features=dm.X_train.shape[1])
     else:
         model = getattr(architectures, temp_args.model_name).load_from_checkpoint(artifact_dir, loss_fn = get_loss(args.loss))
     return model
@@ -35,18 +36,12 @@ def get_model(args, dm):
     loss_fn = get_loss(args.loss)
 
     if args.model_name == "TGCN":
-        if args.censored:
-            assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
         model = TGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[1], loss_fn = loss_fn, **vars(args))
     elif args.model_name == "ATGCN":
-        if args.censored:
-            assert args.loss == "CPNLL", "Censored data only works with CPNLL loss. Rerun with --loss CPNLL"
         model = ATGCN(edge_index=dm.edge_index, edge_weight=dm.edge_weight, node_features=dm.X_train.shape[1], loss_fn = loss_fn, **vars(args))
     elif args.model_name == "AR":
-        assert not args.covariates, "AR models cannot include covariates"
         model = AR(input_dim=args.sequence_length, output_dim=1, loss_fn = loss_fn, **vars(args))
     elif args.model_name == "ARNet":
-        assert not args.covariates, "AR models cannot include covariates"
         model = ARNet(input_dim=args.sequence_length, loss_fn = loss_fn, **vars(args))
     elif args.model_name == "LSTM":
         model = LSTM(input_dim=dm.input_dimensions, loss_fn = loss_fn, **vars(args))
@@ -56,10 +51,26 @@ def get_model(args, dm):
         raise ValueError(f"{args.model_name} not implemented yet!")
     return model
 
+def validate_args(args):
+    # Parse data cut-offs as dates
+    train_start = pd.Timestamp(args.train_start)
+    train_end = pd.Timestamp(args.train_end)
+    val_end = pd.Timestamp(args.val_end)
+    test_end = pd.Timestamp(args.test_end)
+
+    assert train_start < train_end, "Training start date must be before training end date"
+    assert train_end < test_end, "Training end date must be before test end date"
+    assert test_end > val_end > train_end, "Test end date must be after validation end date, which must be after training end date"
+    assert not (args.loss == "PNLL" and args.censored), "PNLL loss cannot be used with censoring" 
+    assert not (args.covariates and ('AR' in args.model_name)), "AR models cannot include covariates"
+    assert not (not args.logger and args.save_predictions), "If you're saving predictions, you must use a logger"
+
 if __name__ == "__main__":
+    print("Starting at: ", pd.Timestamp.now())
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser = Trainer.add_argparse_args(parser)
 
+    # Model and data related arguments
     parser.add_argument("--mode", choices=("train", "test", "predict"), default="train")
     parser.add_argument("--save_predictions", help="Store predictions after training", default=False, action='store_true')
     parser.add_argument("--model_name", type=str, help="The name of the model", 
@@ -75,28 +86,30 @@ if __name__ == "__main__":
     parser.add_argument("--censored", action='store_true', default = False, help= "Censor data at cap. tau")
     parser.add_argument("--censor_level", default = 1, help = "Choose censorship level")
     parser.add_argument("--censor_dynamic", default = False, help = "Use dynamic censoring scheme", action='store_true')
-    parser.add_argument("--forecast_lead", type=int, default=24, help="How many time steps ahead to predict")
-    parser.add_argument("--forecast_horizon", type=int, default=4, help="How many time steps to predict")
-    parser.add_argument("--sequence_length",  type=int, default = 72)
+    parser.add_argument("--forecast_lead", type=int, default=1, help="How many time steps ahead to predict")
+    parser.add_argument("--forecast_horizon", type=int, default=1, help="How many time steps to predict")
+    parser.add_argument("--sequence_length",  type=int, default = 336)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--train_start", type=str, required=True)
     parser.add_argument("--train_end", type=str, required=True)
     parser.add_argument("--test_end", type=str, required=True)
     parser.add_argument("--val_end", type=str, required=False)
 
-
+    # Parse known arguments to get dataloader and model name
     temp_args, _ = parser.parse_known_args()
     parser = getattr(datasets, temp_args.dataloader).add_data_specific_arguments(parser)
     parser = getattr(architectures, temp_args.model_name).add_model_specific_arguments(parser)
     args = parser.parse_args()
 
+    validate_args(args)
+
+    # Initialize datamodule
     dm = getattr(datasets, temp_args.dataloader)(**vars(args))
 
     # Print arguments
     print(args)
-    
-    model = get_model(args, dm)
-    
+
+    # Setup logger
     if args.logger:
         import wandb
         wandb_logger = WandbLogger(project='Thesis', log_model='all', job_type=args.mode)
@@ -104,13 +117,18 @@ if __name__ == "__main__":
     else:
         wandb_logger = None
         run_name = "local"
-    #wandb_logger.watch(model)
 
+    # Initialize model
+    model = get_model(args, dm)
 
+    # Setup checkpoint
     checkpoint_callback = ModelCheckpoint(monitor='val_loss', mode='min', save_last=True)
     
+    # Initialize trainer
     trainer = Trainer.from_argparse_args(args, logger=wandb_logger, callbacks=[checkpoint_callback])
-    predictions = pd.DataFrame()
+
+    # Train, test, and predict
+    predictions = []
     if args.mode == "train":
         trainer.fit(model, dm, ckpt_path=args.pretrained)
         trainer.test(model, datamodule=dm)
@@ -125,12 +143,15 @@ if __name__ == "__main__":
                     wandb.log({f"test_predictions_{cluster}": wandb.Html(open(html_path), inject=False)})
                     remove(html_path)
     elif args.mode == 'predict':
-        trainer.predict(model, datamodule=dm, return_predictions=False)
+        trainer.test(model, datamodule=dm)
         predictions = generate_prediction_data(dm, model)
     
+    # Log predictions
     for tup in predictions:
         cluster, prediction = tup[0], tup[1]
-        prediction.to_csv(f"predictions/predictions_{args.model_name}_{cluster}_{run_name}.csv")
+        prediction.to_csv(f"predictions/predictions_{args.model_name}_{cluster}_{run_name}_{args.censor_level}.csv")
+        html_path = generate_prediction_html(prediction, run_name)
+        wandb.log({f"test_predictions_{cluster}": wandb.Html(open(html_path), inject=False)})
 
     if args.logger:
         wandb.finish()

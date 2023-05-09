@@ -87,7 +87,7 @@ class GRU(pl.LightningModule):
         return loss_metrics["val_loss"]
     
     def test_step(self, batch, batch_idx):
-        loss_metrics, y, y_hat, y_true = self._get_preds_loss_metrics(batch, "test")
+        loss_metrics, y, y_true, y_hat = self._get_preds_loss_metrics(batch, "test")
         self.log_dict(loss_metrics, on_epoch=True, on_step=False, prog_bar=True)
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
         self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
@@ -104,7 +104,6 @@ class GRU(pl.LightningModule):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--hidden_dim", type=int, default=72)
         parser.add_argument("--num_layers", type=int, default=1)
-        #parser.add_argument("--output_dim", type=int, default=1)
         parser.add_argument("--learning_rate", "--lr", type=float, default=1e-3)
         parser.add_argument("--weight_decay", "--wd", type=float, default=1.5e-3)
         
