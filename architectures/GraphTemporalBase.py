@@ -73,7 +73,7 @@ class GraphTemporalBaseClass(LightningModule):
     
     def validation_step(self, batch, batch_idx):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "val")
-        self.log_dict(loss_metrics, prog_bar=True)
+        self.log_dict(loss_metrics, on_epoch=True)
         return loss_metrics["val_loss"]
 
     def test_step(self, batch, batch_idx):
