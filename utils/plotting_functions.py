@@ -13,6 +13,9 @@ sys.path.append('..')
 
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
+
+## colormap  = ['#a6cee3', '#1f78b4', ]
+## colormap='Paired'
 def plot_time_series(df_in, start_date = 0, end_date = 0, save_figure = False):
     plot_list = df_in['Cluster'].unique()[:-1]
     fig, axes = plt.subplots(4,2, figsize=(12, 14), sharey = True)
