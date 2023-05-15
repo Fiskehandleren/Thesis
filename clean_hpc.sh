@@ -11,3 +11,5 @@ git clean -fd trained_models/
 rm -r -f wandb/
 rm -r -f Thesis/
 rm -r -f artifacts/
+
+rm -rf ~/.cache/wandb/
