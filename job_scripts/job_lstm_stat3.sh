@@ -39,15 +39,14 @@
 ## bash python3 main.py --model_name LSTM --cluster WEBSTER --train_start 2018-01-01 --train_end 2019-01-01 --val_end 2019-06-30 --test_end 2019-05-02 --sequence_length 303 --hidden_dim 97 --batch_size 17 --max_epochs 15 --learning_rate 0.01931 --weight_decay 0.02526 --dataloader EVChargersDataset --loss PNLL --censor_level 2 --censor_dynamic --accelerator gpu --devices 1
 
 
-# CLUSTERS=("BRYANT" "MPL" "CAMBRIDGE" "RINCONADA" "HAMILTON" "TED" "HIGH" "WEBSTER")
-CLUSTERS=("BRYANT")
-
+CLUSTERS=("BRYANT" "MPL" "CAMBRIDGE" "RINCONADA" "HAMILTON" "TED" "HIGH" "WEBSTER")
 n=${#CLUSTERS[@]}
+
 for i in $(seq 0 "$(($n-1))")
   do
   bash python3 main.py --loss=CPNLL --mode=train --logger --cluster "${CLUSTERS[$i]}" --devices=1 --val_end=2019-05-02 \
   --censored --test_end=2019-06-30 --max_steps=-1 --num_nodes=1 --precision=32 \
-  --train_end=2019-01-01 --batch_size=16 --covariates --dataloader=EVChargersDataset --hidden_dim=44 --max_epochs=1 \
+  --train_end=2019-01-01 --batch_size=16 --covariates --dataloader=EVChargersDataset --hidden_dim=44 --max_epochs=30 \
   --model_name=LSTM --num_layers=1 --accelerator=gpu --train_start=2017-01-01 --censor_level=3 --weight_decay=0.06622145460281466 \
   --forecast_lead=1 --learning_rate=0.0005661019045297409 --inference_mode --sequence_length=336 --track_grad_norm=-1 \
   --forecast_horizon=1 --save_predictions --log_every_n_steps=50 --enable_progress_bar --replace_sampler_ddp --enable_checkpointing \
