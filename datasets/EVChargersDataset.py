@@ -53,8 +53,8 @@ class EVChargersDataset(pl.LightningDataModule):
                                                                                                 multiple_stations=self.multiple_stations, censorship_level = self.censor_level)
 
         self.input_dimensions = len(self.features)
-
-        self.y_dates = self.df_test.Period.to_numpy()
+        # Drop the first sequence_length samples, as these are used as input to the model
+        self.y_dates = self.df_test.iloc[sequence_length:].Period.to_numpy()
 
     def train_dataloader(self):
         train_dataset = dataloader.SequenceDataset(self.df_train, self.target, self.features, 

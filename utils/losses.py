@@ -41,7 +41,7 @@ def censored_poisson_negative_log_likelihood(y_predict, y, C):
     poiss_cdf += 1e-8
     d_t = (C > y).int()
 
-    return -torch.sum((d_t * pois.log_prob(y)) + ((1-d_t) * (torch.log(poiss_cdf))))
+    return -torch.mean((d_t * pois.log_prob(y)) + ((1-d_t) * (torch.log(poiss_cdf))))
 
 
 def get_loss_metrics(self, batch, y_hat, stage):
