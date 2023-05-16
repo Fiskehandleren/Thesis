@@ -51,19 +51,33 @@ def get_model(args, dm):
         raise ValueError(f"{args.model_name} not implemented yet!")
     return model
 
-def validate_args(args):
-    # Parse data cut-offs as dates
+def validate_args(parser):
+    args = parser.parse_args()
+
     train_start = pd.Timestamp(args.train_start)
     train_end = pd.Timestamp(args.train_end)
     val_end = pd.Timestamp(args.val_end)
     test_end = pd.Timestamp(args.test_end)
 
-    assert train_start < train_end, "Training start date must be before training end date"
-    assert train_end < test_end, "Training end date must be before test end date"
-    assert test_end > val_end > train_end, "Test end date must be after validation end date, which must be after training end date"
-    assert not (args.loss == "PNLL" and args.censored), "PNLL loss cannot be used with censoring" 
-    assert not (args.covariates and ('AR' in args.model_name)), "AR models cannot include covariates"
-    assert not (not args.logger and args.save_predictions), "If you're saving predictions, you must use a logger"
+    if train_start >= train_end:
+        parser.error("Training start date must be before training end date")
+
+    if train_end >= test_end:
+        parser.error("Training end date must be before test end date")
+
+    if not test_end > val_end > train_end:
+        parser.error("Test end date must be after validation end date, which must be after training end date")
+
+    if args.loss == "PNLL" and args.censored:
+        parser.error("PNLL loss cannot be used with censoring")
+
+    if args.covariates and ('AR' in args.model_name):
+        parser.error("AR models cannot include covariates")
+
+    if not args.logger and args.save_predictions:
+        parser.error("If you're saving predictions, you must use a logger")
+
+    return args
 
 if __name__ == "__main__":
     print("Starting at: ", pd.Timestamp.now())
@@ -99,9 +113,9 @@ if __name__ == "__main__":
     temp_args, _ = parser.parse_known_args()
     parser = getattr(datasets, temp_args.dataloader).add_data_specific_arguments(parser)
     parser = getattr(architectures, temp_args.model_name).add_model_specific_arguments(parser)
-    args = parser.parse_args()
-
-    validate_args(args)
+    
+    # Validate and parse arguments
+    args = validate_args(parser)
 
     # Initialize datamodule
     dm = getattr(datasets, temp_args.dataloader)(**vars(args))
@@ -113,7 +127,7 @@ if __name__ == "__main__":
     if args.logger:
         import wandb
         wandb_logger = WandbLogger(project='Thesis', log_model='all', job_type=args.mode)
-        run_name = wandb.run.name
+        run_name = wandb.run.id
     else:
         wandb_logger = None
         run_name = "local"
