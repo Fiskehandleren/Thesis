@@ -1,3 +1,4 @@
+from typing import Tuple
 from torch.utils.data import DataLoader, Dataset
 import pytorch_lightning as pl
 import pandas as pd
@@ -121,7 +122,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
         return parser
     
-    def get_indices(self, start_date, end_date):
+    def get_indices(self, start_date, end_date) -> Tuple[int, int]:
         start_index = self._feat[(self._feat.Period == start_date)].index[0]
         end_index = self._feat[(self._feat.Period == end_date)].index[0]
         return start_index, end_index
