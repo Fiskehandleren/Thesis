@@ -333,13 +333,15 @@ class SequenceDataset(Dataset):
         
         
     def __len__(self):
-        return self.X.shape[0]
+        return self.X.shape[0] - self.sequence_length
 
     def __getitem__(self, i):
+        i += self.sequence_length - 1
         if i >= self.sequence_length - 1:
             i_start = i - self.sequence_length + 1
             x = self.X[i_start:(i + 1), :]
         else:
+            print("WARNING! USING PADDINGs")
             padding = self.X[0].repeat(self.sequence_length - i - 1, 1)
             x = self.X[0:(i + 1), :]
             x = torch.cat((padding, x), 0)

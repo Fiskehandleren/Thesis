@@ -83,7 +83,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.X_val, self.y_val = X[:, :, val_start_index : val_end_index], y[:, val_start_index : val_end_index]
         self.X_test, self.y_test = X[:, :, test_start_index : test_end_index], y[:, test_start_index : test_end_index]
 
-        self.y_dates = self._feat[test_start_index : test_end_index].Period.to_numpy()
+        self.y_dates = self._feat[test_start_index + sequence_length : test_end_index].Period.to_numpy()
 
         self.tau_train, self.tau_test, self.tau_val = tau[:, train_start_index : train_end_index], tau[:, test_start_index : test_end_index], tau[:, val_start_index : val_end_index]
         self.y_train_true, self.y_test_true, self.y_val_true = y_true[:, train_start_index : train_end_index], y_true[:, test_start_index : test_end_index], y_true[:, val_start_index : val_end_index]
@@ -144,18 +144,13 @@ class SequenceSpatialDataset(Dataset):
         self.forecast_horizon = forecast_horizon
 
     def __len__(self):
-        return self.X.shape[2]
+        return self.X.shape[2] - self.sequence_length
 
     def __getitem__(self, i):
-        if i >= self.sequence_length - 1:
-            i_start = i - self.sequence_length + 1
-            x = self.X[:, :, i_start:(i + 1)]
-        else:
-            # If we are at the beginning of the time series, we need to pad the sequence with the first element
-            # until we have a total sequence of length sequence_length 
-            padding = self.X[:, :, 0].unsqueeze(2).repeat_interleave(self.sequence_length - i - 1, dim=2)
-            x = self.X[:, :, 0:(i + 1)]
-            x = torch.cat((padding, x), 2)
+        # Shift index with forecast_length
+        i += self.sequence_length - 1
+        i_start = i - self.sequence_length + 1
+        x = self.X[:, :, i_start:(i + 1)]
 
         y_start = i
         y_end = y_start + self.forecast_horizon

@@ -174,7 +174,6 @@ def generate_prediction_data(dm, model) -> List[Tuple[str, pd.DataFrame]] :
         predictions.append((dm.cluster_names[0], pd.concat([df_dates, df_true, df_uncensored, df_pred], axis=1)))
 
     return predictions
-    #preds.to_csv(f"predictions/predictions_{model_name}_{run_name}.csv")
 
 def generate_prediction_html(predictions, run_name):
     plot_template = dict(
