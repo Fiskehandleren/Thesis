@@ -152,6 +152,7 @@ if __name__ == "__main__":
         prediction.to_csv(f"predictions/predictions_{args.model_name}_{cluster}_{run_name}_{args.censor_level}.csv")
         html_path = generate_prediction_html(prediction, run_name)
         wandb.log({f"test_predictions_{cluster}": wandb.Html(open(html_path), inject=False)})
+        remove(html_path)
 
     if args.logger:
         wandb.finish()
