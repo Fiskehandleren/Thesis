@@ -30,17 +30,18 @@
 
 
 ## CPNLL
-bash python3 -m wandb agent latend-demand/Thesis/tm30aif7
+# bash python3 -m wandb agent latend-demand/Thesis/tm30aif7
 
-# CLUSTERS=("BRYANT" "MPL" "CAMBRIDGE" "RINCONADA" "HAMILTON" "TED" "HIGH" "WEBSTER")
-# n=${#CLUSTERS[@]}
-# for i in $(seq 0 "$(($n-1))")
-#  do
-#  bash python3 main.py --loss=CPNLL --mode=train --logger --cluster "${CLUSTERS[$i]}" --devices=1 \
-#  --censored --train_start=2017-01-01 --train_end=2018-10-01 --val_end=2019-04-01 --test_end=2019-07-01 --max_steps=-1 --num_nodes=1 --precision=32 \
-#  --batch_size=32 --covariates --dataloader=EVChargersDataset --hidden_dim=44 --max_epochs=30 \
-#  --model_name=LSTM --num_layers=1 --accelerator=gpu --censor_level=2 --weight_decay=0.06622145460281466 \
-#  --forecast_lead=48 --learning_rate=0.0005661019045297409 --censor_dynamic --inference_mode --sequence_length=336 --track_grad_norm=-1 \
-#  --forecast_horizon=1 --save_predictions --log_every_n_steps=50 --enable_progress_bar --replace_sampler_ddp --enable_checkpointing \
-#  --enable_model_summary --num_sanity_val_steps=2 --check_val_every_n_epoch=1 --multiple_trainloader_mode=max_size_cycle 
-# done
+CLUSTERS=("BRYANT" "MPL" "CAMBRIDGE" "RINCONADA" "HAMILTON" "TED" "HIGH" "WEBSTER")
+n=${#CLUSTERS[@]}
+for i in $(seq 0 "$(($n-1))")
+  do
+  bash python3 main.py --loss=CPNLL --mode=train --logger --cluster "${CLUSTERS[$i]}" --devices=1 \
+  --censored --train_start=2017-01-01 --train_end=2018-10-01 --val_end=2019-04-01 --test_end=2019-07-01 --max_steps=-1 --num_nodes=1 --precision=32 \
+  --batch_size=60 --covariates --dataloader=EVChargersDataset --hidden_dim=163 --max_epochs=30 \
+  --model_name=LSTM --num_layers=1 --accelerator=gpu --censor_level=2 --weight_decay=0.050701755088873625 \
+  --forecast_lead=48 --learning_rate=0.000551852709389429 --censor_dynamic --inference_mode --sequence_length=336 --track_grad_norm=-1 \
+  --forecast_horizon=1 --save_predictions --log_every_n_steps=50 --enable_progress_bar --replace_sampler_ddp --enable_checkpointing \
+  --enable_model_summary --num_sanity_val_steps=2 --check_val_every_n_epoch=1 --multiple_trainloader_mode=max_size_cycle 
+  
+ done
