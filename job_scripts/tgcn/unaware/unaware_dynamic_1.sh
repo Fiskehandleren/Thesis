@@ -5,7 +5,7 @@
 ### check if gpu is available on queue with `nodestat -g <queue_name>`
 #BSUB -q gpuv100
 ### -- set the job Name --
-#BSUB -J TGCN_cpnll_dynamic_1_unaware_lead_1
+#BSUB -J TGCN_pnll_dynamic_1_unaware_lead_1
 ### -- ask for number of cores (default: 1) --
 #BSUB -n 8
 ### -- Select the resources: 1 gpu in exclusive process mode --
