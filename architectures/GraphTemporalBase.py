@@ -1,5 +1,4 @@
 import argparse
-from typing import Any
 import numpy as np
 from pytorch_lightning import LightningModule
 import torch
