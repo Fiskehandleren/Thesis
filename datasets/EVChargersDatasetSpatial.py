@@ -12,6 +12,7 @@ import utils.dataloader as dataloader
 
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
+
 class EVChargersDatasetSpatial(pl.LightningDataModule):
     def __init__(
         self,
@@ -20,7 +21,6 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         sequence_length: int,
         forecast_lead: int,
         forecast_horizon: int,
-        cluster: str,
         train_start: str,
         train_end: str,
         test_end: str,
@@ -28,7 +28,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         censored: bool,
         censor_level: int,
         censor_dynamic: bool,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.covariates = covariates
@@ -43,7 +43,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
 
         self.val_start = train_end + " 00:30:00"
         self.val_end = val_end
-        
+
         self.test_start = val_end + " 00:30:00"
         self.test_end = test_end
 
@@ -55,15 +55,20 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.df = dataloader.load_data()
         dataset_name = self.get_dataset_name()
 
-        self._feat = pd.read_csv(os.path.join(ROOT_PATH, dataset_name), parse_dates=['Period'])
+        self._feat = pd.read_csv(
+            os.path.join(ROOT_PATH, dataset_name), parse_dates=["Period"]
+        )
 
-        if cluster is not None:
-            self._feat = self._feat[cluster].to_frame()
-            self.cluster_names = np.array([cluster])
-        else:
-            self.cluster_names = self._feat.columns[~(self._feat.columns.str.contains('_TAU')) &  ~(self._feat.columns.str.contains('_TRUE'))]
-            self.cluster_names = self.cluster_names[(self.cluster_names != 'SHERMAN') & (self.cluster_names != 'Period')]
-            self.cluster_names = self.cluster_names.to_numpy(dtype=str)
+        self.cluster_names = [
+            "BRYANT",
+            "CAMBRIDGE",
+            "HAMILTON",
+            "HIGH",
+            "MPL",
+            "RINCONADA",
+            "TED",
+            "WEBSTER",
+        ]
 
         # Load node features
         X, y, tau, y_true = dataloader.get_targets_and_features_tgcn(
@@ -73,66 +78,114 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             add_month=self.covariates,
             add_day_of_week=self.covariates,
             add_hour=self.covariates,
-            add_year=self.covariates)
+            add_year=self.covariates,
+        )
 
-        train_start_index, train_end_index = self.get_indices(self.train_start, self.train_end)
+        train_start_index, train_end_index = self.get_indices(
+            self.train_start, self.train_end
+        )
         val_start_index, val_end_index = self.get_indices(self.val_start, self.val_end)
-        test_start_index, test_end_index = self.get_indices(self.test_start, self.test_end)
-        
+        test_start_index, test_end_index = self.get_indices(
+            self.test_start, self.test_end
+        )
+
         # Grab training data from the start of the dataset to the start of the test set
-        self.X_train, self.y_train = X[:, :, train_start_index : train_end_index], y[:, train_start_index : train_end_index]
-        self.X_val, self.y_val = X[:, :, val_start_index : val_end_index], y[:, val_start_index : val_end_index]
-        self.X_test, self.y_test = X[:, :, test_start_index : test_end_index], y[:, test_start_index : test_end_index]
+        self.X_train, self.y_train = (
+            X[:, :, train_start_index:train_end_index],
+            y[:, train_start_index:train_end_index],
+        )
+        self.X_val, self.y_val = (
+            X[:, :, val_start_index:val_end_index],
+            y[:, val_start_index:val_end_index],
+        )
+        self.X_test, self.y_test = (
+            X[:, :, test_start_index:test_end_index],
+            y[:, test_start_index:test_end_index],
+        )
 
-        self.y_dates = self._feat[test_start_index + sequence_length : test_end_index].Period.to_numpy()
+        self.y_dates = self._feat[
+            test_start_index + sequence_length : test_end_index
+        ].Period.to_numpy()
 
-        self.tau_train, self.tau_test, self.tau_val = tau[:, train_start_index : train_end_index], tau[:, test_start_index : test_end_index], tau[:, val_start_index : val_end_index]
-        self.y_train_true, self.y_test_true, self.y_val_true = y_true[:, train_start_index : train_end_index], y_true[:, test_start_index : test_end_index], y_true[:, val_start_index : val_end_index]
+        self.tau_train, self.tau_test, self.tau_val = (
+            tau[:, train_start_index:train_end_index],
+            tau[:, test_start_index:test_end_index],
+            tau[:, val_start_index:val_end_index],
+        )
+        self.y_train_true, self.y_test_true, self.y_val_true = (
+            y_true[:, train_start_index:train_end_index],
+            y_true[:, test_start_index:test_end_index],
+            y_true[:, val_start_index:val_end_index],
+        )
 
         _, _, self.edge_index, self.edge_weight = dataloader.get_graph(self.df)
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+        )
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+        )
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
-    
+        return DataLoader(
+            self.test_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+        )
+
     def setup(self, stage=None):
         self.train_dataset = SequenceSpatialDataset(
-            torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train),
-            torch.FloatTensor(self.tau_train), torch.FloatTensor(self.y_train_true),
-            self.sequence_length, self.forecast_horizon
+            torch.FloatTensor(self.X_train),
+            torch.FloatTensor(self.y_train),
+            torch.FloatTensor(self.tau_train),
+            torch.FloatTensor(self.y_train_true),
+            self.sequence_length,
+            self.forecast_horizon,
         )
         self.val_dataset = SequenceSpatialDataset(
-            torch.FloatTensor(self.X_val), torch.FloatTensor(self.y_val),
-            torch.FloatTensor(self.tau_val), torch.FloatTensor(self.y_val_true),
-            self.sequence_length, self.forecast_horizon
+            torch.FloatTensor(self.X_val),
+            torch.FloatTensor(self.y_val),
+            torch.FloatTensor(self.tau_val),
+            torch.FloatTensor(self.y_val_true),
+            self.sequence_length,
+            self.forecast_horizon,
         )
         self.test_dataset = SequenceSpatialDataset(
-            torch.FloatTensor(self.X_test), torch.FloatTensor(self.y_test),
-            torch.FloatTensor(self.tau_test), torch.FloatTensor(self.y_test_true),
-            self.sequence_length, self.forecast_horizon
+            torch.FloatTensor(self.X_test),
+            torch.FloatTensor(self.y_test),
+            torch.FloatTensor(self.tau_test),
+            torch.FloatTensor(self.y_test_true),
+            self.sequence_length,
+            self.forecast_horizon,
         )
-       
+
     @staticmethod
     def add_data_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
         return parser
-    
+
     def get_indices(self, start_date, end_date) -> Tuple[int, int]:
         start_index = self._feat[(self._feat.Period == start_date)].index[0]
         end_index = self._feat[(self._feat.Period == end_date)].index[0]
         return start_index, end_index
-    
+
     def get_dataset_name(self) -> str:
-        censor_level = f'{self.censor_level}' 
+        censor_level = f"{self.censor_level}"
         if self.censor_dynamic:
-            return f'../data/charging_session_count_1_to_30_censored_{censor_level}_dynamic.csv'
+            return f"../data/charging_session_count_1_to_30_censored_{censor_level}_dynamic.csv"
         else:
-            return f'../data/charging_session_count_1_to_30_censored_{censor_level}.csv'
+            return f"../data/charging_session_count_1_to_30_censored_{censor_level}.csv"
 
 
 class SequenceSpatialDataset(Dataset):
@@ -151,7 +204,7 @@ class SequenceSpatialDataset(Dataset):
         # Shift index with forecast_length
         i += self.sequence_length - 1
         i_start = i - self.sequence_length + 1
-        x = self.X[:, :, i_start:(i + 1)]
+        x = self.X[:, :, i_start : (i + 1)]
 
         y_start = i
         y_end = y_start + self.forecast_horizon
@@ -161,15 +214,21 @@ class SequenceSpatialDataset(Dataset):
             pad_length = y_end - self.y.shape[1]
 
             y_values = self.y[:, y_start:]
-            y_padding = y_values[:, -1].unsqueeze(1).repeat_interleave(pad_length, dim=1)
+            y_padding = (
+                y_values[:, -1].unsqueeze(1).repeat_interleave(pad_length, dim=1)
+            )
             y_values = torch.cat((y_values, y_padding), 1)
 
             tau_values = self.tau[:, y_start:]
-            tau_padding = tau_values[:, -1].unsqueeze(1).repeat_interleave(pad_length, dim=1)
+            tau_padding = (
+                tau_values[:, -1].unsqueeze(1).repeat_interleave(pad_length, dim=1)
+            )
             tau_values = torch.cat((tau_values, tau_padding), 1)
 
             y_true_values = self.y_true[:, y_start:]
-            y_true_padding = y_true_values[:, -1].unsqueeze(1).repeat_interleave(pad_length, dim=1)
+            y_true_padding = (
+                y_true_values[:, -1].unsqueeze(1).repeat_interleave(pad_length, dim=1)
+            )
             y_true_values = torch.cat((y_true_values, y_true_padding), 1)
         else:
             # If we are not at the end of the time series, we can just take the next forecast_horizon values
@@ -177,7 +236,7 @@ class SequenceSpatialDataset(Dataset):
             tau_values = self.tau[:, y_start:y_end]
             y_true_values = self.y_true[:, y_start:y_end]
 
-        # min max scale x 
+        # min max scale x
         x = (x - x.min()) / (x.max() - x.min())
 
         return x, y_values, tau_values, y_true_values
