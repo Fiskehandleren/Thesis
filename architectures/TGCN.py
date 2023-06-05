@@ -27,6 +27,7 @@ class TGCN2(torch.nn.Module):
         improved: bool = False,
         cached: bool = False,
         add_self_loops: bool = True,
+        use_activation: bool = False,
     ):
         super(TGCN2, self).__init__()
 
@@ -35,6 +36,7 @@ class TGCN2(torch.nn.Module):
         self.improved = improved
         self.cached = cached
         self.add_self_loops = add_self_loops
+        self.use_activation = use_activation
         self.batch_size = batch_size  # not needed
         self._create_parameters_and_layers()
 
@@ -76,40 +78,45 @@ class TGCN2(torch.nn.Module):
     def _set_hidden_state(self, X, H):
         if H is None:
             # can infer batch_size from X.shape, because X is [B, N, F]
-            H = torch.zeros(X.shape[0], X.shape[1], self.out_channels).to(
-                X.device
-            )  # (b, 207, 32)
+            H = torch.zeros(X.shape[0], X.shape[1], self.out_channels).to(X.device)
         return H
 
     def _calculate_update_gate(self, X, edge_index, edge_weight, H):
-        Z = torch.cat(
-            [F.relu(self.conv_z(X, edge_index, edge_weight)), H], axis=2
-        )  # (b, 207, 64)
+        if self.use_activation:
+            Z = torch.cat([F.relu(self.conv_z(X, edge_index, edge_weight)), H], axis=2)
+        else:
+            Z = torch.cat([self.conv_z(X, edge_index, edge_weight), H], axis=2)
         Z = self.linear_z(Z)  # (b, 207, 32)
         Z = torch.sigmoid(Z)
 
         return Z
 
     def _calculate_reset_gate(self, X, edge_index, edge_weight, H):
-        R = torch.cat(
-            [F.relu(self.conv_r(X, edge_index, edge_weight)), H], axis=2
-        )  # (b, 207, 64)
+        if self.use_activation:
+            R = torch.cat([F.relu(self.conv_r(X, edge_index, edge_weight)), H], axis=2)
+        else:
+            R = torch.cat([self.conv_r(X, edge_index, edge_weight), H], axis=2)
         R = self.linear_r(R)  # (b, 207, 32)
         R = torch.sigmoid(R)
 
         return R
 
     def _calculate_candidate_state(self, X, edge_index, edge_weight, H, R):
-        H_tilde = torch.cat(
-            [F.relu(self.conv_h(X, edge_index, edge_weight)), H * R], axis=2
-        )  # (b, 207, 64)
-        H_tilde = self.linear_h(H_tilde)  # (b, 207, 32)
+        if self.use_activation:
+            H_tilde = torch.cat(
+                [F.relu(self.conv_h(X, edge_index, edge_weight)), H * R], axis=2
+            )
+        else:
+            H_tilde = torch.cat(
+                [self.conv_h(X, edge_index, edge_weight), H * R], axis=2
+            )
+        H_tilde = self.linear_h(H_tilde)
         H_tilde = torch.tanh(H_tilde)
 
         return H_tilde
 
     def _calculate_hidden_state(self, Z, H, H_tilde):
-        H = Z * H + (1 - Z) * H_tilde  # # (b, 207, 32)
+        H = Z * H + (1 - Z) * H_tilde
         return H
 
     def forward(
