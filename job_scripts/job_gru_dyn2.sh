@@ -11,7 +11,7 @@
 ### -- Select the resources: 1 gpu in exclusive process mode --
 #BSUB -gpu "num=1:mode=exclusive_process"
 ### -- set walltime limit: hh:mm --  maximum 24 hours for GPU-queues right now
-#BSUB -W 03:00
+#BSUB -W 15:00
 # request 5GB of system-memory
 #BSUB -R "rusage[mem=5GB]"
 ### -- set the email address --
@@ -33,15 +33,18 @@
 # bash python3 -m wandb agent latend-demand/Thesis/qizc2sxv
 
 CLUSTERS=("BRYANT" "MPL" "CAMBRIDGE" "RINCONADA" "HAMILTON" "TED" "HIGH" "WEBSTER")
-# CLUSTERS=("BRYANT")
 n=${#CLUSTERS[@]}
-for i in $(seq 0 "$(($n-1))")
+
+for j in 1 2 3 4 5 6 7
   do
-  bash python3 main.py --loss=CPNLL --mode=train --logger --cluster "${CLUSTERS[$i]}"  --devices=1  \
-  --censored --train_start=2017-01-01 --train_end=2018-10-01 --val_end=2019-04-01 --test_end=2019-07-01 --max_steps=-1 --num_nodes=1 --precision=32 \
-  --covariates --batch_size=51 --dataloader=EVChargersDataset --hidden_dim=238 --max_epochs=30 \
-  --model_name=GRU --num_layers=1 --accelerator=gpu  --censor_level=2 --weight_decay=0.00268538443015154 \
-  --forecast_lead=48 --learning_rate=0.00070386 --censor_dynamic --inference_mode --sequence_length=336 --track_grad_norm=-1 \
-  --forecast_horizon=1 --save_predictions --log_every_n_steps=50 --enable_progress_bar --replace_sampler_ddp --enable_checkpointing \
-  --enable_model_summary --num_sanity_val_steps=2 --check_val_every_n_epoch=1 --multiple_trainloader_mode=max_size_cycle
- done
+  for i in $(seq 0 "$(($n-1))")
+    do
+    bash python3 main.py --loss=CPNLL --mode=train --logger --cluster "${CLUSTERS[$i]}"  --devices=1  \
+    --censored --train_start=2017-01-01 --train_end=2018-10-01 --val_end=2019-04-01 --test_end=2019-07-01 --max_steps=-1 --num_nodes=1 --precision=32 \
+    --covariates --batch_size=51 --dataloader=EVChargersDataset --hidden_dim=238 --max_epochs=30 \
+    --model_name=GRU --num_layers=1 --accelerator=gpu  --censor_level=2 --weight_decay=0.00268538443015154 \
+    --forecast_lead=1 --learning_rate=0.00070386 --censor_dynamic --inference_mode --sequence_length=336 --track_grad_norm=-1 \
+    --forecast_horizon=1 --log_every_n_steps=50 --enable_progress_bar --replace_sampler_ddp --enable_checkpointing \
+    --enable_model_summary --num_sanity_val_steps=2 --check_val_every_n_epoch=1 --multiple_trainloader_mode=max_size_cycle
+  done
+done 
