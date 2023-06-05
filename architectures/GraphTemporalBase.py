@@ -106,4 +106,10 @@ class GraphTemporalBaseClass(LightningModule):
             default=False,
             help="Censor data at cap. tau",
         )
+        parser.add_argument(
+            "--use_activation",
+            action="store_true",
+            default=False,
+            help="Use ReLu after convolutional layer",
+        )
         return parser
