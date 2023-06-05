@@ -13,15 +13,15 @@ class GraphTemporalBaseClass(LightningModule):
         edge_index,
         edge_weight,
         node_features: int,
-        forecast_horizon:int,
+        forecast_horizon: int,
         sequence_length: int,
         hidden_dim: int,
         batch_size: int,
         learning_rate: float = 1e-3,
         weight_decay: float = 1.5e-3,
-        censored= False,
+        censored=False,
         no_self_loops=False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.loss_fn = loss_fn
@@ -48,14 +48,14 @@ class GraphTemporalBaseClass(LightningModule):
         self.test_y_hat = np.empty((0, 8, forecast_horizon))
         self.test_y_true = np.empty((0, 8, forecast_horizon))
 
-        self.save_hyperparameters(ignore=["loss_fn", "edge_index", "edge_weight", "node_features"])
+        self.save_hyperparameters(
+            ignore=["loss_fn", "edge_index", "edge_weight", "node_features"]
+        )
 
-
-
-    def _get_preds_loss_metrics(self, batch, stage):        
+    def _get_preds_loss_metrics(self, batch, stage):
         y_hat = self._get_preds(batch)
         return self.get_loss_metrics(batch, y_hat, stage)
-    
+
     def _get_preds(self, batch):
         x = batch[0]
         # Transfer graph stuff to device
@@ -69,7 +69,7 @@ class GraphTemporalBaseClass(LightningModule):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "train")
         self.log_dict(loss_metrics, prog_bar=True)
         return loss_metrics["train_loss"]
-    
+
     def validation_step(self, batch, batch_idx):
         loss_metrics, _, _, _ = self._get_preds_loss_metrics(batch, "val")
         self.log_dict(loss_metrics, on_epoch=True)
@@ -77,15 +77,29 @@ class GraphTemporalBaseClass(LightningModule):
 
     def test_step(self, batch, batch_idx):
         loss_metrics, y, y_true, y_hat = self._get_preds_loss_metrics(batch, "test")
-        self.log_dict(loss_metrics, on_epoch=True, on_step=False, prog_bar=True)
+        test_loss = loss_metrics["test_loss"]
+        for i, loss_value in enumerate(test_loss):
+            self.log(
+                f"test_loss_{i}",
+                loss_value,
+                on_epoch=True,
+                on_step=False,
+                prog_bar=True,
+            )
         self.test_y = np.concatenate((self.test_y, y.cpu().detach().numpy()))
-        self.test_y_hat = np.concatenate((self.test_y_hat, y_hat.cpu().detach().numpy()))
+        self.test_y_hat = np.concatenate(
+            (self.test_y_hat, y_hat.cpu().detach().numpy())
+        )
         if self.censored:
-            self.test_y_true = np.concatenate((self.test_y_true, y_true.cpu().detach().numpy()))
+            self.test_y_true = np.concatenate(
+                (self.test_y_true, y_true.cpu().detach().numpy())
+            )
         return loss_metrics["test_loss"]
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
+        return torch.optim.Adam(
+            self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay
+        )
 
     @staticmethod
     def add_model_specific_arguments(parent_parser):
@@ -93,5 +107,10 @@ class GraphTemporalBaseClass(LightningModule):
         parser.add_argument("--learning_rate", "--lr", type=float, default=1e-3)
         parser.add_argument("--weight_decay", "--wd", type=float, default=1.5e-3)
         parser.add_argument("--hidden_dim", type=int, default=64)
-        parser.add_argument("--no_self_loops", action='store_true', default = False, help= "Censor data at cap. tau")
+        parser.add_argument(
+            "--no_self_loops",
+            action="store_true",
+            default=False,
+            help="Censor data at cap. tau",
+        )
         return parser
