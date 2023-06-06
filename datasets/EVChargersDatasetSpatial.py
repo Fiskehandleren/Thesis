@@ -27,6 +27,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         censored: bool,
         censor_level: int,
         censor_dynamic: bool,
+        adjecency_threshold: float,
         **kwargs,
     ):
         super().__init__()
@@ -36,6 +37,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         self.forecast_lead = forecast_lead
         self.forecast_horizon = forecast_horizon
         self.censor_level = censor_level
+        self.adjecency_threshold = adjecency_threshold
         # Set the train, val and test dates
         self.train_start = train_start
         self.train_end = train_end
@@ -116,9 +118,9 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             y_true[:, test_start_index:test_end_index],
             y_true[:, val_start_index:val_end_index],
         )
-
+        # Load graph information
         _, _, self.edge_index, self.edge_weight = dataloader.get_graph(
-            self.df, adjecency_threshold_km=2
+            self.df, adjecency_threshold_km=self.adjecency_threshold
         )
 
     def train_dataloader(self):
@@ -186,6 +188,12 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
     @staticmethod
     def add_data_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument(
+            "--adjecency_threshold",
+            type=float,
+            default=2,
+            help="Threshold for adjecency matrix in km",
+        )
         return parser
 
 

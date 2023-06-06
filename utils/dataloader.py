@@ -163,7 +163,36 @@ def create_count_data(df, interval_length=30, save=False, cap_recordings=False):
     return df_pivot_reduced
 
 
-def get_graph(df, adjecency_threshold_km=2):
+def get_graph(df: pd.DataFrame, adjecency_threshold_km: float):
+    """
+    This function is used to generate a graph structure from a given DataFrame, where each node
+    in the graph represents a cluster, and edges are formed between nodes if the clusters are
+    within a certain distance threshold.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing the cluster data. Each row corresponds to a data point,
+        and the DataFrame must include the columns "Cluster", "Latitude", and "Longitude",
+        which represent the cluster name and its geographic coordinates respectively.
+
+    adjecency_threshold_km : float
+        The distance threshold (in kilometers) for establishing edges between nodes. If two
+        clusters are separated by a distance greater than this threshold, no edge will be
+        formed between them.
+
+    Returns
+    -------
+    tuple
+        A tuple containing four elements:
+        G (nx.Graph): The generated graph, where nodes represent clusters and edges represent
+            close proximity between clusters.
+        adj (scipy.sparse.csr_matrix): The adjacency matrix of the graph.
+        edge_index (torch.Tensor): The edge index tensor, which indicates the indices of
+            the nodes that form each edge.
+        edge_weight (torch.Tensor): The edge weight tensor, containing the weight of each edge,
+            which is calculated as the exponential of the negative distance between two clusters.
+    """
     G = nx.Graph()
     CLUSTERS = [
         "BRYANT",
@@ -211,6 +240,45 @@ def get_targets_and_features_tgcn(
     add_day_of_week=True,
     add_year=True,
 ):
+    """
+    This function generates targets and features for a Temporal Graph Convolutional Network (T-GCN).
+    It takes as input a DataFrame and list of node names, and applies various transformations to
+    generate the required input format for the TGCN. These transformations include shifting the target,
+    adding cyclical time features such as month, day of the week, hour and year, and reshaping the data.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input DataFrame. Must contain a 'Period' column of type datetime.
+
+    node_names : list
+        List of names of nodes in the graph.
+
+    forecast_lead : int, optional
+        Number of timesteps to shift the target data. Default is 1.
+
+    add_month : bool, optional
+        If True, add the month as a cyclical feature. Default is True.
+
+    add_hour : bool, optional
+        If True, add the hour as a cyclical feature. Default is True.
+
+    add_day_of_week : bool, optional
+        If True, add the day of the week as a cyclical feature. Default is True.
+
+    add_year : bool, optional
+        If True, add the year as a feature. Default is True.
+
+    Returns
+    -------
+    tuple
+        A tuple containing four elements:
+        X (np.array): Input features for the TGCN. This array includes the cyclical time features
+            and the previous sessions' data for each node.
+        y (np.array): Target variable. This is the sessions data shifted by the forecast lead.
+        tau (np.array): The Tau parameter shifted by the forecast lead.
+        y_true (np.array): The true values of the target variable shifted by the forecast lead.
+    """
     num_nodes = len(node_names)
     # By default we already shift the target by 1 timestep, so we only have to shift by additionaly
     # forecast_leard - 1 steps
