@@ -117,7 +117,9 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             y_true[:, val_start_index:val_end_index],
         )
 
-        _, _, self.edge_index, self.edge_weight = dataloader.get_graph(self.df, adjecency_threshold_km=1)
+        _, _, self.edge_index, self.edge_weight = dataloader.get_graph(
+            self.df, adjecency_threshold_km=2
+        )
 
     def train_dataloader(self):
         return DataLoader(
@@ -180,7 +182,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             return f"../data/charging_session_count_1_to_30_censored_{censor_level}_dynamic.csv"
         else:
             return f"../data/charging_session_count_1_to_30_censored_{censor_level}.csv"
-        
+
     @staticmethod
     def add_data_specific_arguments(parent_parser):
         parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
