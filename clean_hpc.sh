@@ -11,4 +11,5 @@ rm -r -f wandb/
 rm -r -f Thesis/
 rm -r -f artifacts/
 
+du -sh ~/.cache/wandb/
 rm -rf ~/.cache/wandb/

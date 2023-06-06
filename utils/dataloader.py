@@ -241,7 +241,10 @@ def get_targets_and_features_tgcn(
     lag_feats = np.expand_dims(sessions_array, axis=1)
 
     y = (
-        df_test[node_names].shift(-forecast_lead, fill_value=-1).to_numpy(dtype=int).T
+        df_test[node_names]
+        .shift(-forecast_lead, fill_value=np.nan)
+        .to_numpy(dtype=int)
+        .T
     )  # -1 because the next line shifts by 1 by default
 
     time_features = df_test[features].to_numpy(dtype=int).T
@@ -255,20 +258,20 @@ def get_targets_and_features_tgcn(
 
     tau = (
         df_test.filter(like="_TAU")
-        .shift(-forecast_lead, fill_value=-1)
+        .shift(-forecast_lead, fill_value=np.nan)
         .to_numpy(dtype=int)
         .T
     )
 
     y_true = (
         df_test.filter(like="_TRUE")
-        .shift(-forecast_lead, fill_value=-1)
+        .shift(-forecast_lead, fill_value=np.nan)
         .to_numpy(dtype=int)
         .T
     )
 
     # We repeat the date-specific features 8 times because we have 8 nodes.
-    X = np.concatenate((lag_feats, node_time_features), axis=1).astype(np.float16)
+    X = np.concatenate((lag_feats, node_time_features), axis=1).astype(np.float32)
 
     return X, y, tau, y_true
 
@@ -298,7 +301,7 @@ def get_datasets_NN(
 
     ## TODO: add option for validation set
     target_var = target
-    ## if censored:
+
     if censor_dynamic:
         path = os.path.join(
             ROOT_PATH,
@@ -337,23 +340,6 @@ def get_datasets_NN(
         ## Remove tau and true valueso it isnt an input feature
         features.remove(target + "_TAU")
         features.remove(target + "_TRUE")
-
-    """
-    else:
-        ## keep everything from input dataframe
-        path = os.path.join(ROOT_PATH, '../data/charging_session_count_1_to_30.csv')
-        df = pd.read_csv(path, parse_dates=['Period'])
-        
-        df_test = df.copy()
-
-        features = df_test.columns.values
-
-        if not multiple_stations:
-            ## Keep only data from target station and the period 
-            features = [station for station in df_test.columns if target in station]
-            features.append('Period')
-            df_test = df_test[features]
-"""
 
     ## create end points for dataset
     val_start = train_end + " 00:30:00"
@@ -403,7 +389,6 @@ def get_datasets_NN(
 
     features.remove("Period")
 
-    # print("Test set fraction:", len(df_test) / len(df_train))
     return df_train, df_test, df_val, features, target
 
 
