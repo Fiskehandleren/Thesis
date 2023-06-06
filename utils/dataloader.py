@@ -163,7 +163,7 @@ def create_count_data(df, interval_length=30, save=False, cap_recordings=False):
     return df_pivot_reduced
 
 
-def get_graph(df, adjecency_threshold_km=3):
+def get_graph(df, adjecency_threshold_km=2):
     G = nx.Graph()
     CLUSTERS = [
         "BRYANT",
