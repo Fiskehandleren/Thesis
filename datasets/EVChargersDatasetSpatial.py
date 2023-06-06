@@ -118,7 +118,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             y_true[:, val_start_index:val_end_index],
         )
 
-        _, _, self.edge_index, self.edge_weight = dataloader.get_graph(self.df)
+        _, _, self.edge_index, self.edge_weight = dataloader.get_graph(self.df, adjecency_threshold_km=1)
 
     def train_dataloader(self):
         return DataLoader(
