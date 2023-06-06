@@ -180,6 +180,11 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             return f"../data/charging_session_count_1_to_30_censored_{censor_level}_dynamic.csv"
         else:
             return f"../data/charging_session_count_1_to_30_censored_{censor_level}.csv"
+        
+    @staticmethod
+    def add_data_specific_arguments(parent_parser):
+        parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
+        return parser
 
 
 class SequenceSpatialDataset(Dataset):
