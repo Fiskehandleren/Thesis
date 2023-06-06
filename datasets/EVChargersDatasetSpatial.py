@@ -4,7 +4,6 @@ import pytorch_lightning as pl
 import pandas as pd
 import os
 import argparse
-import numpy as np
 import torch
 import multiprocessing as mp
 
@@ -118,7 +117,9 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             y_true[:, val_start_index:val_end_index],
         )
 
-        _, _, self.edge_index, self.edge_weight = dataloader.get_graph(self.df)
+        _, _, self.edge_index, self.edge_weight = dataloader.get_graph(
+            self.df, adjecency_threshold_km=2
+        )
 
     def train_dataloader(self):
         return DataLoader(
@@ -170,11 +171,6 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             self.forecast_horizon,
         )
 
-    @staticmethod
-    def add_data_specific_arguments(parent_parser):
-        parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
-        return parser
-
     def get_indices(self, start_date, end_date) -> Tuple[int, int]:
         start_index = self._feat[(self._feat.Period == start_date)].index[0]
         end_index = self._feat[(self._feat.Period == end_date)].index[0]
@@ -186,6 +182,11 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             return f"../data/charging_session_count_1_to_30_censored_{censor_level}_dynamic.csv"
         else:
             return f"../data/charging_session_count_1_to_30_censored_{censor_level}.csv"
+
+    @staticmethod
+    def add_data_specific_arguments(parent_parser):
+        parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
+        return parser
 
 
 class SequenceSpatialDataset(Dataset):
@@ -209,32 +210,10 @@ class SequenceSpatialDataset(Dataset):
         y_start = i
         y_end = y_start + self.forecast_horizon
 
-        # If we are at the end of the time series, we need to pad the sequence with the last element
-        if y_end > self.y.shape[1]:
-            pad_length = y_end - self.y.shape[1]
-
-            y_values = self.y[:, y_start:]
-            y_padding = (
-                y_values[:, -1].unsqueeze(1).repeat_interleave(pad_length, dim=1)
-            )
-            y_values = torch.cat((y_values, y_padding), 1)
-
-            tau_values = self.tau[:, y_start:]
-            tau_padding = (
-                tau_values[:, -1].unsqueeze(1).repeat_interleave(pad_length, dim=1)
-            )
-            tau_values = torch.cat((tau_values, tau_padding), 1)
-
-            y_true_values = self.y_true[:, y_start:]
-            y_true_padding = (
-                y_true_values[:, -1].unsqueeze(1).repeat_interleave(pad_length, dim=1)
-            )
-            y_true_values = torch.cat((y_true_values, y_true_padding), 1)
-        else:
-            # If we are not at the end of the time series, we can just take the next forecast_horizon values
-            y_values = self.y[:, y_start:y_end]
-            tau_values = self.tau[:, y_start:y_end]
-            y_true_values = self.y_true[:, y_start:y_end]
+        # Assume we are not at the end of the time series, we can just take the next forecast_horizon values
+        y_values = self.y[:, y_start:y_end]
+        tau_values = self.tau[:, y_start:y_end]
+        y_true_values = self.y_true[:, y_start:y_end]
 
         # min max scale x
         x = (x - x.min()) / (x.max() - x.min())
