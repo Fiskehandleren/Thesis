@@ -21,6 +21,7 @@ class GraphTemporalBaseClass(LightningModule):
         weight_decay: float = 1.5e-3,
         censored=False,
         no_self_loops=False,
+        use_activation=False,
         **kwargs,
     ):
         super().__init__()
@@ -38,6 +39,7 @@ class GraphTemporalBaseClass(LightningModule):
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.no_self_loops = no_self_loops
+        self.use_activation = use_activation
         self.forecast_horizon = forecast_horizon
 
         # Setup loss function

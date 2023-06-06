@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from architectures.GraphTemporalBase import GraphTemporalBaseClass
 
+
 class TGCN2(torch.nn.Module):
     r"""An implementation THAT SUPPORTS BATCHES of the Temporal Graph Convolutional Gated Recurrent Cell.
     For details see this paper: `"T-GCN: A Temporal Graph ConvolutionalNetwork for
@@ -157,6 +158,7 @@ class TGCN(GraphTemporalBaseClass):
             self.hidden_dim,
             add_self_loops=True,
             improved=not self.no_self_loops,
+            use_activation=self.use_activation,
             batch_size=self.batch_size,
         )
         self.linear = torch.nn.Linear(self.hidden_dim, self.forecast_horizon)
