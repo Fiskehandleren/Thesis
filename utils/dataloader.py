@@ -295,19 +295,19 @@ def get_targets_and_features_tgcn(
         features.append("year")
     # We shift the target by forecast_lead timesteps and remove the last forecast_lead timesteps
     # as we don't have the target for these timesteps
-    y = df_test[node_names].shift(-forecast_lead).to_numpy(dtype=int)[:-forecast_lead].T
+    y = df_test[node_names].shift(-forecast_lead)[:-forecast_lead].to_numpy(dtype=int).T
 
     tau = (
         df_test.filter(like="_TAU")
-        .shift(-forecast_lead)
-        .to_numpy(dtype=int)[:-forecast_lead]
+        .shift(-forecast_lead)[:-forecast_lead]
+        .to_numpy(dtype=int)
         .T
     )
 
     y_true = (
         df_test.filter(like="_TRUE")
-        .shift(-forecast_lead)
-        .to_numpy(dtype=np.float32)[:-forecast_lead]
+        .shift(-forecast_lead)[:-forecast_lead]
+        .to_numpy(dtype=int)
         .T
     )
 
@@ -315,7 +315,7 @@ def get_targets_and_features_tgcn(
     sessions_array = df_test[node_names].to_numpy(dtype=int)[:-forecast_lead].T
 
     # Drop the last forecast_lead timesteps as we don't have the target for these timesteps
-    time_features = df_test[features].to_numpy(dtype=int)[:-forecast_lead].T
+    time_features = df_test[features].to_numpy(dtype=np.float32)[:-forecast_lead].T
 
     # Repeat the time features 8 times because we have 8 nodes, and the
     # period is the same across all nodes
