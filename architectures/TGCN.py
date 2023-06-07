@@ -156,7 +156,7 @@ class TGCN(GraphTemporalBaseClass):
         self.tgcn_cell = TGCN2(
             self.node_features,
             self.hidden_dim,
-            add_self_loops=True,
+            add_self_loops=False,  # We already do this in the dataloader
             improved=not self.no_self_loops,
             use_activation=self.use_activation,
             batch_size=self.batch_size,
