@@ -29,7 +29,7 @@
 # -- end of LSF options --
 
 ## CPNLL
-bash python3 -m wandb agent latend-demand/Thesis/dtb5ld7a
+# bash python3 -m wandb agent latend-demand/Thesis/dtb5ld7a
 
 ## bash python3 main.py --model_name GRU --cluster WEBSTER --train_start 2018-01-01 --train_end 2019-01-01 --val_end 2019-05-02 --test_end 2019-06-30 --sequence_length 303 --hidden_dim 97 --batch_size 24 --max_epochs 10 --save_predictions --learning_rate 0.0005 --weight_decay 0.02526 --dataloader EVChargersDataset  --loss CPNLL --censor_level 2 --censor_dynamic --censored --accelerator gpu --devices 1
 
@@ -45,7 +45,7 @@ for j in 1 2 3 4
     do
     bash python3 main.py --loss=CPNLL --mode=train --logger --cluster "${CLUSTERS[$i]}"  --devices=1  \
     --censored --train_start=2017-01-01 --train_end=2018-10-01 --val_end=2019-04-01 --test_end=2019-07-01 --max_steps=-1 --num_nodes=1 --precision=32 \
-    --covariates --batch_size=51 --dataloader=EVChargersDataset --hidden_dim=238 --max_epochs=30 \
+    --covariates --batch_size=51 --dataloader=EVChargersDataset --hidden_dim=238 --max_epochs=20 \
     --model_name=GRU --num_layers=1 --accelerator=gpu  --censor_level=2 --weight_decay=0.00268538443015154 \
     --forecast_lead=1 --learning_rate=0.00070386 --inference_mode --sequence_length=336 --track_grad_norm=-1 \
     --forecast_horizon=1 --log_every_n_steps=50 --enable_progress_bar --replace_sampler_ddp --enable_checkpointing \
