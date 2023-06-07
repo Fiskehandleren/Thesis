@@ -34,6 +34,42 @@ def censored_poisson_negative_log_likelihood(y_predict, y, C) -> torch.Tensor:
     return -torch.mean((d_t * pois.log_prob(y)) + ((1 - d_t) * (torch.log(poiss_cdf))))
 
 
+def calculate_losses(y_hat, y, tau, y_true, censored, loss_fn):
+    """
+    Calculate loss metrics based on whether the data is censored or not.
+
+    args:
+        y_hat: the predictions for the batch
+        y: the true, censored values for the batch
+        tau: censoring indicator
+        y_true: the true values for the batch
+        censored: boolean flag indicating whether the data is censored or not
+        loss_fn: loss function used to calculate the main loss
+
+    returns:
+        A tuple consisting of the main loss, the true loss,
+        Mean Absolute Error (MAE), Mean Squared Error (MSE),
+        and Root Mean Squared Error (RMSE).
+    """
+    if censored:
+        loss = loss_fn(y_hat, y, tau)
+        loss_uncen = nn.PoissonNLLLoss(log_input=False)
+        loss_true = loss_uncen(y_hat, y_true)
+
+        mse = F.mse_loss(y_hat, y_true)
+        mae = F.l1_loss(y_hat, y_true)
+    else:
+        # No censoring, so y is the non-censored, observed targets
+        loss = loss_fn(y_hat, y)
+        loss_true = loss
+        mse = F.mse_loss(y_hat, y)
+        mae = F.l1_loss(y_hat, y)
+
+    rmse = torch.sqrt(mse)
+
+    return loss, loss_true, mae, mse, rmse
+
+
 def get_loss_metrics(
     self, batch, y_hat, stage
 ) -> Tuple[Dict[str, float], torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -52,25 +88,16 @@ def get_loss_metrics(
     """
     _, y, tau, y_true = batch
 
-    if self.censored:
-        loss = self.loss_fn(y_hat, y, tau)
-        loss_uncen = nn.PoissonNLLLoss(log_input=False)
-        loss_true = loss_uncen(y_hat, y_true)
-
-        mse = F.mse_loss(y_hat, y_true)
-        mae = F.l1_loss(y_hat, y_true)
-    else:
-        loss = self.loss_fn(y_hat, y)
-        loss_true = loss
-        mse = F.mse_loss(y_hat, y)
-        mae = F.l1_loss(y_hat, y)
+    loss, loss_true, mae, mse, rmse = calculate_losses(
+        y_hat, y, tau, y_true, self.censored, self.loss_fn
+    )
 
     return (
         {
             f"{stage}_loss": loss,
             f"{stage}_loss_true": loss_true.item(),
             f"{stage}_mae": mae.item(),
-            f"{stage}_rmse": sqrt(mse).item(),
+            f"{stage}_rmse": rmse.item(),
             f"{stage}_mse": mse.item(),
         },
         y,
