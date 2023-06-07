@@ -31,14 +31,17 @@
 
 CLUSTERS=("BRYANT" "MPL" "CAMBRIDGE" "RINCONADA" "HAMILTON" "TED" "HIGH" "WEBSTER")
 n=${#CLUSTERS[@]}
-for i in $(seq 0 "$(($n-1))")
-  do
-  bash python3 main.py --loss=CPNLL --mode=train --logger --cluster "${CLUSTERS[$i]}"  --devices=1 --val_end=2019-05-02 \
-  --censored --test_end=2019-06-30 --max_steps=-1 --num_nodes=1 --precision=32 \
-  --train_end=2019-01-01 --batch_size=16 --dataloader=EVChargersDataset --hidden_dim=232 --max_epochs=30 \
-  --model_name=GRU --num_layers=1 --accelerator=gpu --train_start=2017-01-01 --censor_level=1 --weight_decay=0.0013216782040014494 \
-  --forecast_lead=1 --learning_rate=0.0009184290390652538 --censor_dynamic --inference_mode --sequence_length=336 --track_grad_norm=-1 \
-  --forecast_horizon=1 --save_predictions --log_every_n_steps=50 --enable_progress_bar --replace_sampler_ddp --enable_checkpointing \
-  --enable_model_summary --num_sanity_val_steps=2 --check_val_every_n_epoch=1 --multiple_trainloader_mode=max_size_cycle
- done
 
+for j in 1 2 3 4
+  do
+  for i in $(seq 0 "$(($n-1))")
+    do
+    bash python3 main.py --loss=CPNLL --mode=train --logger --cluster "${CLUSTERS[$i]}"  --devices=1  \
+    --censored --train_start=2017-01-01 --train_end=2018-10-01 --val_end=2019-04-01 --test_end=2019-07-01 --max_steps=-1 --num_nodes=1 --precision=32 \
+    --covariates --batch_size=51 --dataloader=EVChargersDataset --hidden_dim=238 --max_epochs=20 \
+    --model_name=GRU --num_layers=1 --accelerator=gpu  --censor_level=1 --weight_decay=0.00268538443015154 \
+    --forecast_lead=1 --learning_rate=0.00070386 --censor_dynamic --inference_mode --sequence_length=336 --track_grad_norm=-1 \
+    --forecast_horizon=1 --log_every_n_steps=50 --enable_progress_bar --replace_sampler_ddp --enable_checkpointing \
+    --enable_model_summary --num_sanity_val_steps=2 --check_val_every_n_epoch=1 --multiple_trainloader_mode=max_size_cycle
+  done
+done 
