@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 
 from torch.utils.data import Dataset
+import utils.constants
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 import torch
 import networkx as nx
@@ -194,16 +195,7 @@ def get_graph(df: pd.DataFrame, adjecency_threshold_km: float):
             which is calculated as the exponential of the negative distance between two clusters.
     """
     G = nx.Graph()
-    CLUSTERS = [
-        "BRYANT",
-        "CAMBRIDGE",
-        "HAMILTON",
-        "HIGH",
-        "MPL",
-        "RINCONADA",
-        "TED",
-        "WEBSTER",
-    ]
+    CLUSTERS = utils.constants.cluster_names
     for idx, cluster in enumerate(CLUSTERS):
         G.add_node(cluster)
         G.nodes[cluster]["ID"] = idx
@@ -301,21 +293,29 @@ def get_targets_and_features_tgcn(
         # We subtract the minimum year to make the year start at 0
         df_test["year"] = df.Period.dt.year - df.Period.dt.year.min()
         features.append("year")
+    # We shift the target by forecast_lead timesteps and remove the last forecast_lead timesteps
+    # as we don't have the target for these timesteps
+    y = df_test[node_names].shift(-forecast_lead).to_numpy(dtype=int)[:-forecast_lead].T
+
+    tau = (
+        df_test.filter(like="_TAU")
+        .shift(-forecast_lead)
+        .to_numpy(dtype=int)[:-forecast_lead]
+        .T
+    )
+
+    y_true = (
+        df_test.filter(like="_TRUE")
+        .shift(-forecast_lead)
+        .to_numpy(dtype=np.float32)[:-forecast_lead]
+        .T
+    )
 
     # Get the sessions for each node so we have [num_nodes, num_timesteps]
-    sessions_array = df_test[node_names].to_numpy(dtype=int).T
+    sessions_array = df_test[node_names].to_numpy(dtype=int)[:-forecast_lead].T
 
-    # Reshape to fit being concatenated with the datetime features
-    lag_feats = np.expand_dims(sessions_array, axis=1)
-
-    y = (
-        df_test[node_names]
-        .shift(-forecast_lead, fill_value=np.nan)
-        .to_numpy(dtype=int)
-        .T
-    )  # -1 because the next line shifts by 1 by default
-
-    time_features = df_test[features].to_numpy(dtype=int).T
+    # Drop the last forecast_lead timesteps as we don't have the target for these timesteps
+    time_features = df_test[features].to_numpy(dtype=int)[:-forecast_lead].T
 
     # Repeat the time features 8 times because we have 8 nodes, and the
     # period is the same across all nodes
@@ -324,19 +324,8 @@ def get_targets_and_features_tgcn(
     )  # Add new 1nd axis, so we can repeat this dim 8 times
     node_time_features = node_time_features.repeat(num_nodes, axis=0)
 
-    tau = (
-        df_test.filter(like="_TAU")
-        .shift(-forecast_lead, fill_value=np.nan)
-        .to_numpy(dtype=int)
-        .T
-    )
-
-    y_true = (
-        df_test.filter(like="_TRUE")
-        .shift(-forecast_lead, fill_value=np.nan)
-        .to_numpy(dtype=int)
-        .T
-    )
+    # Reshape to fit being concatenated with the datetime features
+    lag_feats = np.expand_dims(sessions_array, axis=1)
 
     # We repeat the date-specific features 8 times because we have 8 nodes.
     X = np.concatenate((lag_feats, node_time_features), axis=1).astype(np.float32)

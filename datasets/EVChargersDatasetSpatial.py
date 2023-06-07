@@ -6,6 +6,7 @@ import os
 import argparse
 import torch
 import multiprocessing as mp
+import utils.constants
 
 import utils.dataloader as dataloader
 
@@ -60,16 +61,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
             os.path.join(ROOT_PATH, dataset_name), parse_dates=["Period"]
         )
 
-        self.cluster_names = [
-            "BRYANT",
-            "CAMBRIDGE",
-            "HAMILTON",
-            "HIGH",
-            "MPL",
-            "RINCONADA",
-            "TED",
-            "WEBSTER",
-        ]
+        self.cluster_names = utils.constants.cluster_names
 
         # Load node features
         X, y, tau, y_true = dataloader.get_targets_and_features_tgcn(
@@ -224,6 +216,6 @@ class SequenceSpatialDataset(Dataset):
         y_true_values = self.y_true[:, y_start:y_end]
 
         # min max scale x
-        x = (x - x.min()) / (x.max() - x.min())
+        # x = (x - x.min()) / (x.max() - x.min())
 
         return x, y_values, tau_values, y_true_values
