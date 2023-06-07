@@ -96,7 +96,7 @@ class TGCN2(torch.nn.Module):
             R = torch.cat([F.relu(self.conv_r(X, edge_index, edge_weight)), H], axis=2)
         else:
             R = torch.cat([self.conv_r(X, edge_index, edge_weight), H], axis=2)
-        R = self.linear_r(R)  # (b, 207, 32)
+        R = self.linear_r(R)  # (batch, nodes, outputs)
         R = torch.sigmoid(R)
 
         return R
@@ -161,6 +161,7 @@ class TGCN(GraphTemporalBaseClass):
             use_activation=self.use_activation,
             batch_size=self.batch_size,
         )
+        self.dropout = torch.nn.Dropout(p=0.2)
         self.linear = torch.nn.Linear(self.hidden_dim, self.forecast_horizon)
 
     def forward(self, x, edge_index, edge_weight):
@@ -171,5 +172,7 @@ class TGCN(GraphTemporalBaseClass):
             # Each X_t is of shape (Batch Size, Nodes, Features)
             h = self.tgcn_cell(x[:, :, :, i], edge_index, edge_weight, h)
 
+        if self.use_dropout:
+            h = self.dropout(h)
         y = self.linear(h)
         return y.exp(), h

@@ -22,6 +22,7 @@ class GraphTemporalBaseClass(LightningModule):
         censored=False,
         no_self_loops=False,
         use_activation=False,
+        use_dropout=False,
         **kwargs,
     ):
         super().__init__()
@@ -32,15 +33,19 @@ class GraphTemporalBaseClass(LightningModule):
         self.node_features = node_features
 
         self.censored = censored
-        # Hyperparameters
+
+        # Model features
+        self.forecast_horizon = forecast_horizon
         self.sequence_length = sequence_length
+
+        # Hyperparameters
         self.hidden_dim = hidden_dim
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.no_self_loops = no_self_loops
         self.use_activation = use_activation
-        self.forecast_horizon = forecast_horizon
+        self.use_dropout = use_dropout
 
         # Setup loss function
         GraphTemporalBaseClass.get_loss_metrics = get_loss_metrics
@@ -113,5 +118,11 @@ class GraphTemporalBaseClass(LightningModule):
             action="store_true",
             default=False,
             help="Use ReLu after convolutional layer",
+        )
+        parser.add_argument(
+            "--use_dropout",
+            action="store_true",
+            default=False,
+            help="Use dropout after T-GCN layer",
         )
         return parser
