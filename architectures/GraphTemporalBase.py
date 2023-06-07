@@ -2,8 +2,8 @@ import argparse
 import numpy as np
 from pytorch_lightning import LightningModule
 import torch
-
-from utils.losses import get_loss_metrics
+import utils.constants
+from utils.losses import get_loss_metrics, calculate_losses
 
 
 class GraphTemporalBaseClass(LightningModule):
@@ -23,6 +23,7 @@ class GraphTemporalBaseClass(LightningModule):
         no_self_loops=False,
         use_activation=False,
         use_dropout=False,
+        print_cluster_loss=False,
         **kwargs,
     ):
         super().__init__()
@@ -37,6 +38,9 @@ class GraphTemporalBaseClass(LightningModule):
         # Model features
         self.forecast_horizon = forecast_horizon
         self.sequence_length = sequence_length
+
+        # Debugging
+        self.print_cluster_loss = print_cluster_loss
 
         # Hyperparameters
         self.hidden_dim = hidden_dim
@@ -61,10 +65,32 @@ class GraphTemporalBaseClass(LightningModule):
 
     def _get_preds_loss_metrics(self, batch, stage):
         y_hat = self._get_preds(batch)
+
+        if self.print_cluster_loss and stage in ["val", "test"]:
+            # Get loss for each node
+            _, y, tau, y_true = batch
+            for i in range(len(utils.constants.cluster_names)):
+                loss, loss_true, mae, mse, rmse = calculate_losses(
+                    y_hat[:, i, :],
+                    y[:, i, :],
+                    tau[:, i, :],
+                    y_true[:, i, :],
+                    self.censored,
+                    self.loss_fn,
+                )
+                node_loss_metrics = {
+                    f"{utils.constants.cluster_names[i]}_{stage}_loss": loss,
+                    f"{utils.constants.cluster_names[i]}_{stage}_loss_true": loss_true,
+                    f"{utils.constants.cluster_names[i]}_{stage}_mae": mae,
+                    f"{utils.constants.cluster_names[i]}_{stage}_mse": mse,
+                    f"{utils.constants.cluster_names[i]}_{stage}_rmse": rmse,
+                }
+                self.log_dict(node_loss_metrics, on_epoch=True, on_step=False)
+
         return self.get_loss_metrics(batch, y_hat, stage)
 
     def _get_preds(self, batch):
-        x = batch[0]
+        x = batch[0]  # [b, 8, forecast_horizon, sequence_length]
         # Transfer graph stuff to device
         self.edge_index = self.edge_index.to(self.device)
         self.edge_weight = self.edge_weight.to(self.device)
@@ -124,5 +150,11 @@ class GraphTemporalBaseClass(LightningModule):
             action="store_true",
             default=False,
             help="Use dropout after T-GCN layer",
+        )
+        parser.add_argument(
+            "--print_cluster_loss",
+            action="store_true",
+            default=False,
+            help="Print loss metrics for each cluster",
         )
         return parser

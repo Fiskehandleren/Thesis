@@ -1,4 +1,4 @@
 from utils.dataloader import load_data, create_count_data
 
 
-__all__ = ["*", ]
+__all__ = ["*"]

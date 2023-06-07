@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 
 from torch.utils.data import Dataset
+import utils.constants
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 import torch
 import networkx as nx
@@ -194,16 +195,7 @@ def get_graph(df: pd.DataFrame, adjecency_threshold_km: float):
             which is calculated as the exponential of the negative distance between two clusters.
     """
     G = nx.Graph()
-    CLUSTERS = [
-        "BRYANT",
-        "CAMBRIDGE",
-        "HAMILTON",
-        "HIGH",
-        "MPL",
-        "RINCONADA",
-        "TED",
-        "WEBSTER",
-    ]
+    CLUSTERS = utils.constants.cluster_names
     for idx, cluster in enumerate(CLUSTERS):
         G.add_node(cluster)
         G.nodes[cluster]["ID"] = idx
