@@ -36,7 +36,7 @@ def censored_poisson_negative_log_likelihood(y_predict, y, C) -> torch.Tensor:
 
 def get_loss_metrics(
     self, batch, y_hat, stage
-) -> Tuple[Dict[str, float | torch.Tensor], torch.Tensor, torch.Tensor, torch.Tensor]:
+) -> Tuple[Dict[str, float], torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Returns a dictionary of loss metrics for the given batch and predictions.
     args:
