@@ -450,8 +450,11 @@ def get_datasets_NN(
     features.remove("Period")
 
     df_test.to_csv("./data/check_test_set.csv")
-
+    df_train.to_csv("./data/check_train_set.csv")
+    df_val.to_csv("./data/check_val_set.csv")
     
+    print("saved csvs")
+
     return df_train, df_test, df_val, features, target
 
 
