@@ -455,8 +455,14 @@ def get_datasets_NN(
     df_val = df.loc[val_start:val_end].copy()
     df_test = df.loc[test_start:test_end].copy()
 
+    df_test.to_csv("./data/check_test_set.csv")
+
+
     features.remove("Period")
 
+    df_test.to_csv("./data/check_test_set.csv")
+
+    
     return df_train, df_test, df_val, features, target
 
 
