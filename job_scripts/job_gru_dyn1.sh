@@ -3,7 +3,7 @@
 ### - specify queue --
 ### classstat 
 ### check if gpu is available on queue with `nodestat -g <queue_name>`
-#BSUB -q gpuv100
+#BSUB -q gpua100
 ### -- set the job Name --
 #BSUB -J gru_dyn1
 ### -- ask for number of cores (default: 1) --
