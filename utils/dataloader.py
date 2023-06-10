@@ -446,13 +446,12 @@ def get_datasets_NN(
 
     df_test.to_csv("./data/check_test_set.csv")
 
-
     features.remove("Period")
 
     df_test.to_csv("./data/check_test_set.csv")
     df_train.to_csv("./data/check_train_set.csv")
     df_val.to_csv("./data/check_val_set.csv")
-    
+
     print("saved csvs")
 
     return df_train, df_test, df_val, features, target
@@ -486,35 +485,14 @@ class SequenceDataset(Dataset):
 
     def __getitem__(self, i):
         i += self.sequence_length - 1
-        if i >= self.sequence_length - 1:
-            i_start = i - self.sequence_length + 1
-            x = self.X[i_start : (i + 1), :]
-        else:
-            print("WARNING! USING PADDINGs")
-            padding = self.X[0].repeat(self.sequence_length - i - 1, 1)
-            x = self.X[0 : (i + 1), :]
-            x = torch.cat((padding, x), 0)
+        i_start = i - self.sequence_length + 1
+        x = self.X[i_start : (i + 1), :]
 
         y_start = i
         y_end = y_start + self.forecast_horizon
 
-        if y_end > self.y.shape[0]:
-            pad_length = y_end - self.y.shape[0]
-
-            y_values = self.y[y_start:]
-            y_padding = y_values[-1].repeat(pad_length)
-            y_values = torch.cat((y_values, y_padding))
-
-            tau_values = self.tau[y_start:]
-            tau_padding = tau_values[-1].repeat(pad_length)
-            tau_values = torch.cat((tau_values, tau_padding))
-
-            y_true_values = self.y_true[y_start:]
-            y_true_padding = y_true_values[-1].repeat(pad_length)
-            y_true_values = torch.cat((y_true_values, y_true_padding))
-        else:
-            y_values = self.y[y_start:y_end]
-            tau_values = self.tau[y_start:y_end]
-            y_true_values = self.y_true[y_start:y_end]
+        y_values = self.y[y_start:y_end]
+        tau_values = self.tau[y_start:y_end]
+        y_true_values = self.y_true[y_start:y_end]
 
         return x, y_values, tau_values, y_true_values
