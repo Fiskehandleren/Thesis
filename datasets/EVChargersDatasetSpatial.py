@@ -84,31 +84,32 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
 
         # Grab training data from the start of the dataset to the start of the test set
         self.X_train, self.y_train = (
-            X[:, :, train_start_index:train_end_index],
-            y[:, train_start_index:train_end_index],
+            X[:, :, train_start_index : train_end_index + 1],
+            y[:, train_start_index : train_end_index + 1],
         )
         self.X_val, self.y_val = (
-            X[:, :, val_start_index:val_end_index],
-            y[:, val_start_index:val_end_index],
+            X[:, :, val_start_index : val_end_index + 1],
+            y[:, val_start_index : val_end_index + 1],
         )
         self.X_test, self.y_test = (
-            X[:, :, test_start_index:test_end_index],
-            y[:, test_start_index:test_end_index],
+            X[:, :, test_start_index : test_end_index + 1],
+            y[:, test_start_index : test_end_index + 1],
         )
 
         self.y_dates = self._feat[
-            test_start_index + sequence_length : test_end_index
+            test_start_index
+            + sequence_length : test_end_index  # no need to +1 here, as Pandas is inclusive
         ].Period.to_numpy()
 
         self.tau_train, self.tau_test, self.tau_val = (
-            tau[:, train_start_index:train_end_index],
-            tau[:, test_start_index:test_end_index],
-            tau[:, val_start_index:val_end_index],
+            tau[:, train_start_index : train_end_index + 1],
+            tau[:, test_start_index : test_end_index + 1],
+            tau[:, val_start_index : val_end_index + 1],
         )
         self.y_train_true, self.y_test_true, self.y_val_true = (
-            y_true[:, train_start_index:train_end_index],
-            y_true[:, test_start_index:test_end_index],
-            y_true[:, val_start_index:val_end_index],
+            y_true[:, train_start_index : train_end_index + 1],
+            y_true[:, test_start_index : test_end_index + 1],
+            y_true[:, val_start_index : val_end_index + 1],
         )
         # Load graph information
         _, _, self.edge_index, self.edge_weight = dataloader.get_graph(
@@ -166,8 +167,8 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         )
 
     def get_indices(self, start_date, end_date) -> Tuple[int, int]:
-        start_index = self._feat[(self._feat.Period == start_date)].index[0]
-        end_index = self._feat[(self._feat.Period == end_date)].index[0]
+        start_index = self._feat[(self._feat.Period == start_date)].index.values[0]
+        end_index = self._feat[(self._feat.Period == end_date)].index.values[0]
         return start_index, end_index
 
     def get_dataset_name(self) -> str:

@@ -27,10 +27,10 @@ bash python3 main.py --loss=CPNLL --mode=train \
 --batch_size=256 --dataloader=EVChargersDatasetSpatial --hidden_dim=408 \
 --max_epochs=10 --model_name=TGCN --accelerator=gpu --train_start=2017-01-01 \
 --weight_decay=0.0008445547076417635 --forecast_lead=1 \
---learning_rate=0.0007437002957287736 --sequence_length=336 --forecast_horizon=1 \
+--learning_rate=0.0001 --sequence_length=336 --forecast_horizon=1 \
 --log_every_n_steps=50 --enable_progress_bar --replace_sampler_ddp --enable_checkpointing \
 --enable_model_summary --num_sanity_val_steps=2 --check_val_every_n_epoch=1 \
 --multiple_trainloader_mode=max_size_cycle --save_predictions \
---censor_level=1--censor_dynamic
+--censor_level=1 --censor_dynamic --adjecency_threshold=2
 
 ## ONLY CHANGE HYPERPERAMS - NOT CENSORLEVEL OR DYNAMIC

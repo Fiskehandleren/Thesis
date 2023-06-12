@@ -295,19 +295,19 @@ def get_targets_and_features_tgcn(
         features.append("year")
     # We shift the target by forecast_lead timesteps and remove the last forecast_lead timesteps
     # as we don't have the target for these timesteps
-    y = df_test[node_names].shift(-forecast_lead).to_numpy(dtype=int)[:-forecast_lead].T
+    y = df_test[node_names].shift(-forecast_lead)[:-forecast_lead].to_numpy(dtype=int).T
 
     tau = (
         df_test.filter(like="_TAU")
-        .shift(-forecast_lead)
-        .to_numpy(dtype=int)[:-forecast_lead]
+        .shift(-forecast_lead)[:-forecast_lead]
+        .to_numpy(dtype=int)
         .T
     )
 
     y_true = (
         df_test.filter(like="_TRUE")
-        .shift(-forecast_lead)
-        .to_numpy(dtype=np.float32)[:-forecast_lead]
+        .shift(-forecast_lead)[:-forecast_lead]
+        .to_numpy(dtype=int)
         .T
     )
 
@@ -315,7 +315,7 @@ def get_targets_and_features_tgcn(
     sessions_array = df_test[node_names].to_numpy(dtype=int)[:-forecast_lead].T
 
     # Drop the last forecast_lead timesteps as we don't have the target for these timesteps
-    time_features = df_test[features].to_numpy(dtype=int)[:-forecast_lead].T
+    time_features = df_test[features].to_numpy(dtype=np.float32)[:-forecast_lead].T
 
     # Repeat the time features 8 times because we have 8 nodes, and the
     # period is the same across all nodes
@@ -444,7 +444,15 @@ def get_datasets_NN(
     df_val = df.loc[val_start:val_end].copy()
     df_test = df.loc[test_start:test_end].copy()
 
+    df_test.to_csv("./data/check_test_set.csv")
+
     features.remove("Period")
+
+    df_test.to_csv("./data/check_test_set.csv")
+    df_train.to_csv("./data/check_train_set.csv")
+    df_val.to_csv("./data/check_val_set.csv")
+
+    print("saved csvs")
 
     return df_train, df_test, df_val, features, target
 
@@ -477,35 +485,14 @@ class SequenceDataset(Dataset):
 
     def __getitem__(self, i):
         i += self.sequence_length - 1
-        if i >= self.sequence_length - 1:
-            i_start = i - self.sequence_length + 1
-            x = self.X[i_start : (i + 1), :]
-        else:
-            print("WARNING! USING PADDINGs")
-            padding = self.X[0].repeat(self.sequence_length - i - 1, 1)
-            x = self.X[0 : (i + 1), :]
-            x = torch.cat((padding, x), 0)
+        i_start = i - self.sequence_length + 1
+        x = self.X[i_start : (i + 1), :]
 
         y_start = i
         y_end = y_start + self.forecast_horizon
 
-        if y_end > self.y.shape[0]:
-            pad_length = y_end - self.y.shape[0]
-
-            y_values = self.y[y_start:]
-            y_padding = y_values[-1].repeat(pad_length)
-            y_values = torch.cat((y_values, y_padding))
-
-            tau_values = self.tau[y_start:]
-            tau_padding = tau_values[-1].repeat(pad_length)
-            tau_values = torch.cat((tau_values, tau_padding))
-
-            y_true_values = self.y_true[y_start:]
-            y_true_padding = y_true_values[-1].repeat(pad_length)
-            y_true_values = torch.cat((y_true_values, y_true_padding))
-        else:
-            y_values = self.y[y_start:y_end]
-            tau_values = self.tau[y_start:y_end]
-            y_true_values = self.y_true[y_start:y_end]
+        y_values = self.y[y_start:y_end]
+        tau_values = self.tau[y_start:y_end]
+        y_true_values = self.y_true[y_start:y_end]
 
         return x, y_values, tau_values, y_true_values

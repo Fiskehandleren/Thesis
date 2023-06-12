@@ -3,9 +3,9 @@
 ### - specify queue --
 ### classstat 
 ### check if gpu is available on queue with `nodestat -g <queue_name>`
-#BSUB -q gpuv100
+#BSUB -q gpua100
 ### -- set the job Name --
-#BSUB -J TGCN_cpnll_static_2_lead_1
+#BSUB -J TGCN_cpnll_static_2_lead_48_covariates
 ### -- ask for number of cores (default: 1) --
 #BSUB -n 8
 ### -- Select the resources: 1 gpu in exclusive process mode --
@@ -24,13 +24,11 @@
 # -- end of LSF options --
 bash python3 main.py --loss=CPNLL --mode=train \
 --devices=1 --val_end=2019-04-01 --censored --test_end=2019-07-01 --train_end=2018-10-01 \
---batch_size=256 --dataloader=EVChargersDatasetSpatial --hidden_dim=408 \
---max_epochs=10 --model_name=TGCN --accelerator=gpu --train_start=2017-01-01 \
---weight_decay=0.0008445547076417635 --forecast_lead=1 \
---learning_rate=0.0007437002957287736 --sequence_length=336 --forecast_horizon=1 \
---log_every_n_steps=50 --enable_progress_bar --replace_sampler_ddp --enable_checkpointing \
---enable_model_summary --num_sanity_val_steps=2 --check_val_every_n_epoch=1 \
---multiple_trainloader_mode=max_size_cycle --save_predictions \
---censor_level=2
+--batch_size=128 --dataloader=EVChargersDatasetSpatial --hidden_dim=512 \
+--max_epochs=15 --model_name=TGCN --accelerator=gpu --train_start=2017-01-01 \
+--weight_decay=0.0001 --forecast_lead=48 \
+--learning_rate=0.0001 --sequence_length=336 --forecast_horizon=1 \
+--save_predictions \
+--censor_level=2 --adjecency_threshold=0 --use_activation --covariates
 
 ## ONLY CHANGE HYPERPERAMS - NOT CENSORLEVEL OR DYNAMIC
