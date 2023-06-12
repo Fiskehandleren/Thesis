@@ -3,9 +3,9 @@
 ### - specify queue --
 ### classstat 
 ### check if gpu is available on queue with `nodestat -g <queue_name>`
-#BSUB -q gpuv100
+#BSUB -q gpua100
 ### -- set the job Name --
-#BSUB -J lstm_cpnll
+#BSUB -J lstm_dyn2_UW_48
 ### -- ask for number of cores (default: 1) --
 #BSUB -n 8
 ### -- Select the resources: 1 gpu in exclusive process mode --
@@ -29,21 +29,17 @@
 # -- end of LSF options --
 
 
-## CPNLL
-# bash python3 -m wandb agent latend-demand/Thesis/tm30aif7
-
 CLUSTERS=("BRYANT" "MPL" "CAMBRIDGE" "RINCONADA" "HAMILTON" "TED" "HIGH" "WEBSTER")
-# CLUSTERS=("BRYANT")
 n=${#CLUSTERS[@]}
-for j in 1 2 3 4 5 6 7
+for j in 1 2 3
   do
   for i in $(seq 0 "$(($n-1))")
     do
-    bash python3 main.py --loss=CPNLL --mode=train --logger --cluster "${CLUSTERS[$i]}" --devices=1 \
-    --censored --train_start=2017-01-01 --train_end=2018-10-01 --val_end=2019-04-01 --test_end=2019-07-01 --max_steps=-1 --num_nodes=1 --precision=32 \
-    --batch_size=60 --covariates --dataloader=EVChargersDataset --hidden_dim=163 --max_epochs=30 \
+    bash python3 main.py --loss=PNLL --mode=train --logger --cluster "${CLUSTERS[$i]}" --devices=1 \
+    --train_start=2017-01-01 --train_end=2018-10-01 --val_end=2019-04-01 --test_end=2019-07-01 --max_steps=-1 --num_nodes=1 --precision=32 \
+    --batch_size=60 --covariates --dataloader=EVChargersDataset --hidden_dim=163 --max_epochs=20 \
     --model_name=LSTM --num_layers=1 --accelerator=gpu --censor_level=2 --weight_decay=0.050701755088873625 \
-    --forecast_lead=1 --learning_rate=0.000551852709389429 --censor_dynamic --inference_mode --sequence_length=336 --track_grad_norm=-1 \
+    --forecast_lead=48 --learning_rate=0.000551852709389429 --censor_dynamic --inference_mode --sequence_length=336 --track_grad_norm=-1 \
     --forecast_horizon=1 --log_every_n_steps=50 --enable_progress_bar --replace_sampler_ddp --enable_checkpointing \
     --enable_model_summary --num_sanity_val_steps=2 --check_val_every_n_epoch=1 --multiple_trainloader_mode=max_size_cycle 
   done
