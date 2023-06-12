@@ -5,7 +5,7 @@
 ### check if gpu is available on queue with `nodestat -g <queue_name>`
 #BSUB -q gpuv100
 ### -- set the job Name --
-#BSUB -J ar_basic
+#BSUB -J ar_stat2_1_48
 ### -- ask for number of cores (default: 1) --
 #BSUB -n 8
 ### -- Select the resources: 1 gpu in exclusive process mode --
@@ -36,18 +36,18 @@
 
 ## bash python3 main.py --model_name ARNet --cluster WEBSTER --train_start 2019-01-01 --train_end 2019-05-01 --test_end 2019-06-01 --val_end 2019-06-20 --sequence_length 215 --hidden_dim 53 --batch_size 16 --max_epochs 1 --learning_rate 1e-2 --weight_decay 0.0721 --dataloader EVChargersDataset --censored --loss CPNLL --censor_level 2 --censor_dynamic
 
-
-## bash python3 main.py --model_name ARNet --cluster WEBSTER --train_start 2019-01-01 --train_end 2019-05-01 --test_end 2019-06-01 --val_end 2019-06-20 --batch_size 32 --max_epochs 4 --dataloader EVChargersDataset --censored --loss CPNLL --censor_level 3 --covariates False --accelerator gpu --devices 1
-## bash python3 main.py --model_name ARNet --cluster WEBSTER --train_start 2019-01-01 --train_end 2019-05-01 --test_end 2019-06-01 --val_end 2019-06-20 --batch_size 32 --max_epochs 2 --dataloader EVChargersDataset --loss PNLL --censor_level 3 --accelerator gpu --devices 1
-
 CLUSTERS=("BRYANT" "MPL" "CAMBRIDGE" "RINCONADA" "HAMILTON" "TED" "HIGH" "WEBSTER")
-for cluster in ${CLUSTERS[@]}
-do
-  bash python3 main.py --loss=CPNLL --mode=train --logger --cluster "$cluster" --devices=1 \
-  --censored --max_steps=-1 --num_nodes=1 --precision=32 \
-  --train_start=2017-01-01 --val_end=2019-04-01 --test_end=2019-07-01 --train_end=2018-10-01 \
-  --batch_size=32 --dataloader=EVChargersDataset --max_epochs=30 \
-  --model_name=AR --accelerator=gpu --censor_level=2 --weight_decay=0.06470644058196104 \
-  --forecast_lead=48 --learning_rate=0.0005927787748490534 --censor_dynamic --inference_mode --sequence_length=336 \
-  --forecast_horizon=1 
+n=${#CLUSTERS[@]}
+for j in 1 2 3 4
+  do
+  for i in $(seq 0 "$(($n-1))")
+    do
+    bash python3 main.py --loss=CPNLL --censored --mode=train --logger --cluster "${CLUSTERS[$i]}" --devices=1 \
+    --max_steps=-1 --num_nodes=1 --precision=32 \
+    --train_start=2017-01-01 --val_end=2019-04-01 --test_end=2019-07-01 --train_end=2018-10-01 \
+    --batch_size=32 --dataloader=EVChargersDataset --max_epochs=20 \
+    --model_name=AR --accelerator=gpu --censor_level=2 --weight_decay=0.06470644058196104 \
+    --forecast_lead=48 --learning_rate=0.0005927787748490534 --inference_mode --sequence_length=336 \
+    --forecast_horizon=1
+  done
 done
