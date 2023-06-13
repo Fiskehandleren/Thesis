@@ -58,7 +58,7 @@ def calculate_losses(y_hat, y, tau, y_true, censored, loss_fn):
     """
     if censored:
         loss = loss_fn(y_hat, y, tau)
-        loss_uncen = poisson_negative_log_likelihood
+        loss_uncen = nn.PoissonNLLLoss(log_input=False)
         loss_true = loss_uncen(y_hat, y_true)
 
         mse = F.mse_loss(y_hat, y_true)
