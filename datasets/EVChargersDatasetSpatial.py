@@ -97,8 +97,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         )
 
         self.y_dates = self._feat[
-            test_start_index
-            + sequence_length : test_end_index  # no need to +1 here, as Pandas is inclusive
+            test_start_index + sequence_length : test_end_index + 1
         ].Period.to_numpy()
 
         self.tau_train, self.tau_test, self.tau_val = (
