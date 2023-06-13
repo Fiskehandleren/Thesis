@@ -9,7 +9,7 @@ def get_loss(loss):
     if loss == "MSE":
         return nn.MSELoss()
     elif loss == "PNLL":
-        return nn.PoissonNLLLoss(log_input=False)
+        return poisson_negative_log_likelihood
     elif loss == "CPNLL":
         return censored_poisson_negative_log_likelihood
     else:
@@ -34,6 +34,11 @@ def censored_poisson_negative_log_likelihood(y_predict, y, C) -> torch.Tensor:
     return -torch.mean((d_t * pois.log_prob(y)) + ((1 - d_t) * (torch.log(poiss_cdf))))
 
 
+def poisson_negative_log_likelihood(y_predict, y) -> torch.Tensor:
+    pois = torch.distributions.poisson.Poisson(y_predict)
+    return -torch.mean(pois.log_prob(y))
+
+
 def calculate_losses(y_hat, y, tau, y_true, censored, loss_fn):
     """
     Calculate loss metrics based on whether the data is censored or not.
@@ -53,7 +58,7 @@ def calculate_losses(y_hat, y, tau, y_true, censored, loss_fn):
     """
     if censored:
         loss = loss_fn(y_hat, y, tau)
-        loss_uncen = nn.PoissonNLLLoss(log_input=False)
+        loss_uncen = poisson_negative_log_likelihood
         loss_true = loss_uncen(y_hat, y_true)
 
         mse = F.mse_loss(y_hat, y_true)
