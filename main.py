@@ -194,6 +194,16 @@ if __name__ == "__main__":
     # Validate and parse arguments
     args = validate_args(parser)
 
+
+    if "T00:00:00Z" in args.train_start:
+        args.train_start = args.train_start.replace("T00:00:00Z", "")
+    if "T00:00:00Z" in args.train_end:
+        args.train_end = args.train_end.replace("T00:00:00Z", "")
+    if "T00:00:00Z" in args.test_end:
+        args.test_end = args.test_end.replace("T00:00:00Z", "")
+    if "T00:00:00Z" in args.val_end:
+        args.val_end = args.val_end.replace("T00:00:00Z", "")
+
     # Initialize datamodule
     dm = getattr(datasets, temp_args.dataloader)(**vars(args))
 
