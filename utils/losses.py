@@ -58,16 +58,18 @@ def calculate_losses(y_hat, y, tau, y_true, censored, loss_fn):
     """
     if censored:
         loss = loss_fn(y_hat, y, tau)
-        loss_uncen = poisson_negative_log_likelihood
+        loss_uncen = nn.PoissonNLLLoss(log_input=False)
         loss_true = loss_uncen(y_hat, y_true)
 
         mse = F.mse_loss(y_hat, y_true)
         mae = F.l1_loss(y_hat, y_true)
+
     else:
         # This is the loss the unaware model is optimizing after (censored target)
         loss = loss_fn(y_hat, y)
         # We evaluate the model on losses between the true target (latent) and the predictions
         loss_uncen = nn.PoissonNLLLoss(log_input=False)
+        
         loss_true = loss_uncen(y_hat, y_true)
         mse = F.mse_loss(y_hat, y_true)
         mae = F.l1_loss(y_hat, y_true)
