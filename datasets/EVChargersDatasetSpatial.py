@@ -183,7 +183,7 @@ class EVChargersDatasetSpatial(pl.LightningDataModule):
         parser.add_argument(
             "--adjecency_threshold",
             type=float,
-            default=2,
+            default=1.5,
             help="Threshold for adjecency matrix in km",
         )
         return parser
