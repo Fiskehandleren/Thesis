@@ -9,3 +9,4 @@ gpu-*
 gpu_*
 *.html
 job_out/
+trained_models/

@@ -54,3 +54,10 @@ python main.py --mode predict --pretrained fiskehandleren/Thesis/model-232ybnqc:
 - `charging_session_count_1_to_30_censored_3.csv`: observations capped at value 3
 - `charging_session_count_1_to_30_censored_2_dynamic.csv`: observations capped at 2 below maximum number of plug (when maximum #number of plugs is equal or above 2)
 - `charging_session_count_1_to_30_censored_1_dynamic.csv`: observations capped at 1 below maximum number of plug (when maximum #number of plugs is equal or above 2)
+
+## Results
+
+### T-GCN-A
+
+Predictions for the Bryant cluster using T-GCN-A with 1, 24 and 48 hour forecast leads. The model is trained on the Static 2 censor strategy.
+![T-GCN-A](../Speciale/Figures/aware_vs_unaware_forecast_leads_BRYANT_1_24_48.png)
