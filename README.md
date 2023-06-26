@@ -60,4 +60,4 @@ python main.py --mode predict --pretrained fiskehandleren/Thesis/model-232ybnqc:
 ### T-GCN-A
 
 Predictions for the Bryant cluster using T-GCN-A with 1, 24 and 48 hour forecast leads. The model is trained on the Static 2 censor strategy.
-![T-GCN-A](../Speciale/Figures/aware_vs_unaware_forecast_leads_BRYANT_1_24_48.png)
+![T-GCN-A](Figures/aware_vs_unaware_forecast_leads_BRYANT_1_24_48.png)
