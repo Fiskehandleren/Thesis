@@ -24,6 +24,7 @@ class GraphTemporalBaseClass(LightningModule):
         use_activation=False,
         use_dropout=False,
         print_cluster_loss=False,
+        train_edge_weight=False,
         **kwargs,
     ):
         super().__init__()
@@ -50,6 +51,7 @@ class GraphTemporalBaseClass(LightningModule):
         self.no_self_loops = no_self_loops
         self.use_activation = use_activation
         self.use_dropout = use_dropout
+        self.train_edge_weight = train_edge_weight
 
         # Setup loss function
         GraphTemporalBaseClass.get_loss_metrics = get_loss_metrics
