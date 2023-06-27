@@ -197,7 +197,6 @@ if __name__ == "__main__":
     # Validate and parse arguments
     args = validate_args(parser)
 
-
     if "T00:00:00Z" in args.train_start:
         args.train_start = args.train_start.replace("T00:00:00Z", "")
     if "T00:00:00Z" in args.train_end:
@@ -229,9 +228,7 @@ if __name__ == "__main__":
     model = get_model(args, dm)
 
     # Setup checkpoint
-    checkpoint_callback = ModelCheckpoint(
-        monitor="val_loss", mode="min", save_last=True
-    )
+    checkpoint_callback = ModelCheckpoint(monitor="val_loss", mode="min")
 
     # Initialize trainer
     trainer = Trainer.from_argparse_args(
@@ -242,9 +239,9 @@ if __name__ == "__main__":
     predictions = []
     if args.mode == "train":
         trainer.fit(model, dm, ckpt_path=args.pretrained)
-        trainer.test(model, datamodule=dm)
+        trainer.test(model, datamodule=dm, ckpt_path="best")
         # Save local model
-        trainer.save_checkpoint(f"trained_models/best_model_{run_name}.ckpt")
+        # trainer.save_checkpoint(f"trained_models/best_model_{run_name}.ckpt")
         if args.save_predictions:
             predictions = generate_prediction_data(dm, model)
             for tup in predictions:
@@ -260,7 +257,7 @@ if __name__ == "__main__":
                     )
                     remove(html_path)
     elif args.mode == "predict":
-        trainer.test(model, datamodule=dm)
+        trainer.test(model, datamodule=dm, ckpt_path="best")
         predictions = generate_prediction_data(dm, model)
 
     # Log predictions
