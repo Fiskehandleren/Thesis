@@ -61,9 +61,7 @@ class GraphTemporalBaseClass(LightningModule):
         self.test_y_hat = np.empty((0, 8, forecast_horizon))
         self.test_y_true = np.empty((0, 8, forecast_horizon))
 
-        self.save_hyperparameters(
-            ignore=["loss_fn", "edge_index", "edge_weight", "node_features"]
-        )
+        self.save_hyperparameters(ignore=["loss_fn", "edge_index", "node_features"])
 
     def _get_preds_loss_metrics(self, batch, stage):
         y_hat = self._get_preds(batch)

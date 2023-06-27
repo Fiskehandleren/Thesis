@@ -168,6 +168,7 @@ class TGCN(GraphTemporalBaseClass):
             improved=not self.no_self_loops,
             use_activation=self.use_activation,
             batch_size=self.batch_size,
+            train_edge_weight=self.train_edge_weight,
         )
         self.dropout = torch.nn.Dropout(p=0.2)
         self.linear = torch.nn.Linear(self.hidden_dim, self.forecast_horizon)
