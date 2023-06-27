@@ -111,7 +111,7 @@ class TGCN2(torch.nn.Module):
         f_a_x = self.conv_z_2(
             self.conv_z(X, edge_index, edge_weight).relu(), edge_index, edge_weight
         ).sigmoid()
-        Z = torch.cat([F.relu(self.conv_z(X, edge_index, edge_weight)), H], axis=2)
+        Z = torch.cat([f_a_x, H], axis=2)
         Z = self.linear_z(Z)  # (b, 207, 32)
         Z = torch.sigmoid(Z)
 
