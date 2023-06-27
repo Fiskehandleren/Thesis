@@ -28,7 +28,6 @@ class TGCN2(torch.nn.Module):
         improved: bool = False,
         cached: bool = False,
         add_self_loops: bool = True,
-        use_activation: bool = False,
         train_edge_weight: bool = False,
     ):
         super(TGCN2, self).__init__()
@@ -38,7 +37,6 @@ class TGCN2(torch.nn.Module):
         self.improved = improved
         self.cached = cached
         self.add_self_loops = add_self_loops
-        self.use_activation = use_activation
         self.batch_size = batch_size  # not needed
         self._create_parameters_and_layers()
 
@@ -50,6 +48,13 @@ class TGCN2(torch.nn.Module):
     def _create_update_gate_parameters_and_layers(self):
         self.conv_z = GCNConv(
             in_channels=self.in_channels,
+            out_channels=self.in_channels * 2,
+            improved=self.improved,
+            cached=self.cached,
+            add_self_loops=self.add_self_loops,
+        )
+        self.conv_z_2 = GCNConv(
+            in_channels=self.in_channels * 2,
             out_channels=self.out_channels,
             improved=self.improved,
             cached=self.cached,
@@ -60,6 +65,13 @@ class TGCN2(torch.nn.Module):
     def _create_reset_gate_parameters_and_layers(self):
         self.conv_r = GCNConv(
             in_channels=self.in_channels,
+            out_channels=self.in_channels * 2,
+            improved=self.improved,
+            cached=self.cached,
+            add_self_loops=self.add_self_loops,
+        )
+        self.conv_r_2 = GCNConv(
+            in_channels=self.in_channels * 2,
             out_channels=self.out_channels,
             improved=self.improved,
             cached=self.cached,
@@ -70,6 +82,13 @@ class TGCN2(torch.nn.Module):
     def _create_candidate_state_parameters_and_layers(self):
         self.conv_h = GCNConv(
             in_channels=self.in_channels,
+            out_channels=self.in_channels * 2,
+            improved=self.improved,
+            cached=self.cached,
+            add_self_loops=self.add_self_loops,
+        )
+        self.conv_h_2 = GCNConv(
+            in_channels=self.in_channels * 2,
             out_channels=self.out_channels,
             improved=self.improved,
             cached=self.cached,
@@ -89,34 +108,30 @@ class TGCN2(torch.nn.Module):
         return H
 
     def _calculate_update_gate(self, X, edge_index, edge_weight, H):
-        if self.use_activation:
-            Z = torch.cat([F.relu(self.conv_z(X, edge_index, edge_weight)), H], axis=2)
-        else:
-            Z = torch.cat([self.conv_z(X, edge_index, edge_weight), H], axis=2)
+        f_a_x = self.conv_z_2(
+            self.conv_z(X, edge_index, edge_weight).relu(), edge_index, edge_weight
+        ).sigmoid()
+        Z = torch.cat([F.relu(self.conv_z(X, edge_index, edge_weight)), H], axis=2)
         Z = self.linear_z(Z)  # (b, 207, 32)
         Z = torch.sigmoid(Z)
 
         return Z
 
     def _calculate_reset_gate(self, X, edge_index, edge_weight, H):
-        if self.use_activation:
-            R = torch.cat([F.relu(self.conv_r(X, edge_index, edge_weight)), H], axis=2)
-        else:
-            R = torch.cat([self.conv_r(X, edge_index, edge_weight), H], axis=2)
+        f_a_x = self.conv_r_2(
+            self.conv_r(X, edge_index, edge_weight).relu(), edge_index, edge_weight
+        ).sigmoid()
+        R = torch.cat([f_a_x, H], axis=2)
         R = self.linear_r(R)  # (batch, nodes, outputs)
         R = torch.sigmoid(R)
 
         return R
 
     def _calculate_candidate_state(self, X, edge_index, edge_weight, H, R):
-        if self.use_activation:
-            H_tilde = torch.cat(
-                [F.relu(self.conv_h(X, edge_index, edge_weight)), H * R], axis=2
-            )
-        else:
-            H_tilde = torch.cat(
-                [self.conv_h(X, edge_index, edge_weight), H * R], axis=2
-            )
+        f_a_x = self.conv_h_2(
+            self.conv_h(X, edge_index, edge_weight).relu(), edge_index, edge_weight
+        ).sigmoid()
+        H_tilde = torch.cat([f_a_x, H * R], axis=2)
         H_tilde = self.linear_h(H_tilde)
         H_tilde = torch.tanh(H_tilde)
 
@@ -166,21 +181,19 @@ class TGCN(GraphTemporalBaseClass):
             edge_weight=self.edge_weight,
             add_self_loops=False,  # We already do this in the dataloader
             improved=not self.no_self_loops,
-            use_activation=self.use_activation,
             batch_size=self.batch_size,
             train_edge_weight=self.train_edge_weight,
         )
         self.dropout = torch.nn.Dropout(p=0.2)
         self.linear = torch.nn.Linear(self.hidden_dim, self.forecast_horizon)
 
-    def forward(self, x, edge_index, edge_weight):
+    def forward(self, x, edge_index):
         # X is shape (Batch Size, Nodes, Features, Sequence Length)
         h = None  # Maybe initialize randomly?
         # Go over each
         for i in range(self.sequence_length):
             # Each X_t is of shape (Batch Size, Nodes, Features)
             h = self.tgcn_cell(x[:, :, :, i], edge_index, h)
-
         if self.use_dropout:
             h = self.dropout(h)
         y = self.linear(h)

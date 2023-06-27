@@ -21,7 +21,6 @@ class GraphTemporalBaseClass(LightningModule):
         weight_decay: float = 1.5e-3,
         censored=False,
         no_self_loops=False,
-        use_activation=False,
         use_dropout=False,
         print_cluster_loss=False,
         train_edge_weight=False,
@@ -49,7 +48,6 @@ class GraphTemporalBaseClass(LightningModule):
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.no_self_loops = no_self_loops
-        self.use_activation = use_activation
         self.use_dropout = use_dropout
         self.train_edge_weight = train_edge_weight
 
@@ -93,9 +91,8 @@ class GraphTemporalBaseClass(LightningModule):
         x = batch[0]  # [b, 8, forecast_horizon, sequence_length]
         # Transfer graph stuff to device
         self.edge_index = self.edge_index.to(self.device)
-        self.edge_weight = self.edge_weight.to(self.device)
         # Make predictions
-        y_hat, _ = self(x, self.edge_index, self.edge_weight)
+        y_hat, _ = self(x, self.edge_index)
         return y_hat
 
     def training_step(self, batch, batch_idx):
@@ -140,12 +137,6 @@ class GraphTemporalBaseClass(LightningModule):
             help="Censor data at cap. tau",
         )
         parser.add_argument(
-            "--use_activation",
-            action="store_true",
-            default=False,
-            help="Use ReLu after convolutional layer",
-        )
-        parser.add_argument(
             "--use_dropout",
             action="store_true",
             default=False,
@@ -157,7 +148,6 @@ class GraphTemporalBaseClass(LightningModule):
             default=False,
             help="Print loss metrics for each cluster",
         )
-
         parser.add_argument(
             "--train_edge_weight",
             action="store_true",
