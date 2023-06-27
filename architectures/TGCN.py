@@ -24,10 +24,12 @@ class TGCN2(torch.nn.Module):
         in_channels: int,
         out_channels: int,
         batch_size: int,  # this entry is unnecessary, kept only for backward compatibility
+        edge_weight: torch.FloatTensor,
         improved: bool = False,
         cached: bool = False,
         add_self_loops: bool = True,
         use_activation: bool = False,
+        train_edge_weight: bool = False,
     ):
         super(TGCN2, self).__init__()
 
@@ -39,6 +41,11 @@ class TGCN2(torch.nn.Module):
         self.use_activation = use_activation
         self.batch_size = batch_size  # not needed
         self._create_parameters_and_layers()
+
+        if train_edge_weight:
+            self.edge_weight = torch.nn.Parameter(edge_weight)
+        else:
+            self.edge_weight = torch.nn.Parameter(edge_weight, requires_grad=False)
 
     def _create_update_gate_parameters_and_layers(self):
         self.conv_z = GCNConv(
@@ -123,7 +130,7 @@ class TGCN2(torch.nn.Module):
         self,
         X: torch.FloatTensor,
         edge_index: torch.LongTensor,
-        edge_weight: torch.FloatTensor = None,
+        # edge_weight: torch.FloatTensor = None,
         H: torch.FloatTensor = None,
     ) -> torch.FloatTensor:
         """
@@ -141,9 +148,9 @@ class TGCN2(torch.nn.Module):
             * **H** *(PyTorch Float Tensor)* - Hidden state matrix for all nodes.
         """
         H = self._set_hidden_state(X, H)
-        Z = self._calculate_update_gate(X, edge_index, edge_weight, H)
-        R = self._calculate_reset_gate(X, edge_index, edge_weight, H)
-        H_tilde = self._calculate_candidate_state(X, edge_index, edge_weight, H, R)
+        Z = self._calculate_update_gate(X, edge_index, self.edge_weight, H)
+        R = self._calculate_reset_gate(X, edge_index, self.edge_weight, H)
+        H_tilde = self._calculate_candidate_state(X, edge_index, self.edge_weight, H, R)
         H = self._calculate_hidden_state(Z, H, H_tilde)  # (b, 207, 32)
         return H
 
@@ -156,6 +163,7 @@ class TGCN(GraphTemporalBaseClass):
         self.tgcn_cell = TGCN2(
             self.node_features,
             self.hidden_dim,
+            edge_weight=self.edge_weight,
             add_self_loops=False,  # We already do this in the dataloader
             improved=not self.no_self_loops,
             use_activation=self.use_activation,
@@ -170,7 +178,7 @@ class TGCN(GraphTemporalBaseClass):
         # Go over each
         for i in range(self.sequence_length):
             # Each X_t is of shape (Batch Size, Nodes, Features)
-            h = self.tgcn_cell(x[:, :, :, i], edge_index, edge_weight, h)
+            h = self.tgcn_cell(x[:, :, :, i], edge_index, h)
 
         if self.use_dropout:
             h = self.dropout(h)

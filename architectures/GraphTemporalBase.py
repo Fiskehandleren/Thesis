@@ -157,4 +157,11 @@ class GraphTemporalBaseClass(LightningModule):
             default=False,
             help="Print loss metrics for each cluster",
         )
+
+        parser.add_argument(
+            "--train_edge_weight",
+            action="store_true",
+            default=False,
+            help="Train edge weights",
+        )
         return parser
