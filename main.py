@@ -102,6 +102,9 @@ def validate_args(parser):
     if args.loss == "PNLL" and args.censored:
         parser.error("PNLL loss cannot be used with censoring")
 
+    if not args.censored and args.loss == 'CPNLL':
+        parser.error("CPNLL loss cannot be used when data is not censored")
+
     if args.covariates and ("AR" in args.model_name):
         parser.error("AR models cannot include covariates")
 
