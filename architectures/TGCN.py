@@ -48,6 +48,7 @@ class TGCN2(torch.nn.Module):
             in_channels=self.in_channels,
             out_channels=self.out_channels,
             add_self_loops=self.add_self_loops,
+            node_dim=1,
         )
         self.linear_z = torch.nn.Linear(2 * self.out_channels, self.out_channels)
 
@@ -56,6 +57,7 @@ class TGCN2(torch.nn.Module):
             in_channels=self.in_channels,
             out_channels=self.out_channels,
             add_self_loops=self.add_self_loops,
+            node_dim=1,
         )
         self.linear_r = torch.nn.Linear(2 * self.out_channels, self.out_channels)
 
@@ -64,6 +66,7 @@ class TGCN2(torch.nn.Module):
             in_channels=self.in_channels,
             out_channels=self.out_channels,
             add_self_loops=self.add_self_loops,
+            node_dim=1,
         )
         self.linear_h = torch.nn.Linear(2 * self.out_channels, self.out_channels)
 
@@ -155,7 +158,6 @@ class TGCN(GraphTemporalBaseClass):
             self.hidden_dim,
             edge_weight=self.edge_weight,
             add_self_loops=False,  # We already do this in the dataloader
-            improved=not self.no_self_loops,
             use_activation=self.use_activation,
             batch_size=self.batch_size,
             train_edge_weight=self.train_edge_weight,
