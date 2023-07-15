@@ -13,7 +13,7 @@ python main.py --model_name TGCN \
     --train_start 2017-01-01 --train_end 2018-10-01 --val_end 2019-04-01 --test_end 2019-07-01 \
     --covariates --batch_size 256 --max_epochs 20 --sequence_length 336 \
     --hidden_dim 512 --forecast_lead 48 --forecast_horizon 1 \
-    --use_activation --weight_decay 0.0001 --lr 0.0001 \
+    --weight_decay 0.0001 --lr 0.0001 \
     --censored --dataloader EVChargersDatasetSpatial --loss CPNLL \
     --censor_level 2 --adjecency_threshold 1.5
 ```
@@ -25,7 +25,7 @@ python main.py --model_name TGCN \
     --train_start 2017-01-01 --train_end 2018-10-01 --val_end 2019-04-01 --test_end 2019-07-01 \
     --covariates --batch_size 256 --max_epochs 20 --sequence_length 336 \
     --hidden_dim 512 --forecast_lead 48 --forecast_horizon 1 \
-    --use_activation --weight_decay 0.0001 --lr 0.0001 \
+    --weight_decay 0.0001 --lr 0.0001 \
     --dataloader EVChargersDatasetSpatial --loss PNLL \
     --censor_level 2 --adjecency_threshold 1.5
 ```

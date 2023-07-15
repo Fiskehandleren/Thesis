@@ -25,8 +25,6 @@ class TGCN2(torch.nn.Module):
         out_channels: int,
         batch_size: int,  # this entry is unnecessary, kept only for backward compatibility
         edge_weight: torch.FloatTensor,
-        improved: bool = False,
-        cached: bool = False,
         add_self_loops: bool = True,
         use_activation: bool = False,
         train_edge_weight: bool = False,
@@ -35,8 +33,6 @@ class TGCN2(torch.nn.Module):
 
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.improved = improved
-        self.cached = cached
         self.add_self_loops = add_self_loops
         self.use_activation = use_activation
         self.batch_size = batch_size  # not needed
@@ -51,8 +47,6 @@ class TGCN2(torch.nn.Module):
         self.conv_z = GCNConv(
             in_channels=self.in_channels,
             out_channels=self.out_channels,
-            improved=self.improved,
-            cached=self.cached,
             add_self_loops=self.add_self_loops,
         )
         self.linear_z = torch.nn.Linear(2 * self.out_channels, self.out_channels)
@@ -61,8 +55,6 @@ class TGCN2(torch.nn.Module):
         self.conv_r = GCNConv(
             in_channels=self.in_channels,
             out_channels=self.out_channels,
-            improved=self.improved,
-            cached=self.cached,
             add_self_loops=self.add_self_loops,
         )
         self.linear_r = torch.nn.Linear(2 * self.out_channels, self.out_channels)
@@ -71,8 +63,6 @@ class TGCN2(torch.nn.Module):
         self.conv_h = GCNConv(
             in_channels=self.in_channels,
             out_channels=self.out_channels,
-            improved=self.improved,
-            cached=self.cached,
             add_self_loops=self.add_self_loops,
         )
         self.linear_h = torch.nn.Linear(2 * self.out_channels, self.out_channels)
